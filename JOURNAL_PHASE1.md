@@ -62,3 +62,11 @@ Ce fichier est le point de reprise partagé pour les agents qui travaillent sur 
 - `flutter pub get` a réussi avec Flutter 3.50.1; packages résolus dans `.work/tools/pub-cache`. Le répertoire actif est la racine `lib/`; il n’y a pas encore de dossier `web/` ni de tests `test/` à la racine.
 - `flutter analyze` à la racine analysait également deux copies Flutter préexistantes. Analyse ciblée `lib/` : 10 avis de dépréciation uniquement (imports `material.dart`, `withOpacity`, et une propriété de formulaire), sans avertissement de type/lint distinct; la commande retourne néanmoins le code 1. Ne pas masquer les avis sans décision.
 - Première tentative de cluster PostgreSQL isolé : l’accès réseau local sur port fixe a été accepté, mais `initdb` s’est arrêté sur les variables de locale système avant de créer la base. Aucun dump ni changement de base utilisateur; relancer avec `--locale=C --encoding=UTF8` et `LANG=C`.
+
+
+### 2026-11-20 — PostgreSQL validé, état Flutter (02:00 UTC)
+
+- PostgreSQL 18.7 : test effectué sur un cluster temporaire local, avec locale `C`, port 55439 et données exclusivement marquées `DEMO`. Le cycle Alembic `upgrade → downgrade base → upgrade` passe; `pg_dump` custom puis `pg_restore` sur une seconde base restaurent la ligne `DEMO` et la version `0001_phase1`. Le cluster temporaire a été arrêté et supprimé.
+- Flutter : `pub get` passe. `flutter analyze lib --no-pub --no-fatal-infos` rapporte 10 avis de dépréciation dans le prototype racine et retourne 1; aucune correction de migration Material n’a été faite, car elle touche largement le prototype existant et mérite un choix de KILO. `flutter test --no-pub` ne peut pas démarrer : le dossier `test/` n’existe pas.
+- Le Flutter racine ne contient pas non plus de dossier `web/`; les répertoires Flutter historiques sont des copies présentes à la racine et n’ont pas été déplacés, copiés ou modifiés.
+- **Suite recommandée à KILO :** choisir le répertoire Flutter canonique (`frontend/` selon `AGENTS.md` ou conserver le projet racine), ajouter le squelette Web et tests; brancher l’inscription/connexion/admin sur FastAPI. Le backend et les critères de migration/sauvegarde Phase 1 sont prêts; la Phase 1 entière n’est pas déclarée terminée tant que le frontend n’est pas vérifié et que l’utilisateur ne l’a pas validée.
