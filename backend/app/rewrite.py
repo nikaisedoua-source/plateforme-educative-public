@@ -217,7 +217,8 @@ def ask_model(prompt: str, image: bytes | None, schema: dict, retry: bool = True
     if image:
         message["images"] = [base64.b64encode(image).decode()]
     body = {"model": settings.ollama_vision_model, "messages": [message], "stream": False, "format": schema,
-            "options": {"temperature": 0, "num_ctx": 8192}, "keep_alive": "30m"}
+            "options": {"temperature": 0 if retry else 0.3, "num_ctx": 8192, "num_predict": 3000,
+                        "repeat_penalty": 1.0 if retry else 1.15}, "keep_alive": "30m"}
     try:
         response = httpx.post(f"{settings.ollama_url.rstrip('/')}/api/chat", json=body, timeout=600)
     except httpx.HTTPError as error:
@@ -231,7 +232,7 @@ def ask_model(prompt: str, image: bytes | None, schema: dict, retry: bool = True
     except json.JSONDecodeError as error:
         if not retry:
             raise ValueError("réponse du modèle illisible") from error
-        return ask_model(prompt, image, schema, retry=False)  # une seconde tentative
+        return ask_model(prompt, image, schema, retry=False)  # seconde tentative, moins de répétitions
 
 
 # ---------------------------------------------------------------------------
@@ -253,6 +254,12 @@ def _numbers(text: str) -> list[str]:
     return re.findall(r"\d+", unicodedata.normalize("NFKC", text))
 
 
+def _joined_numbers(text: str) -> list[str]:
+    """Nombres écrits avec des espaces ou une virgule (« 2 , 9 8 », « 48,571 ») réduits à leurs chiffres."""
+    text = unicodedata.normalize("NFKC", text).replace("{,}", ",")
+    return [re.sub(r"\D", "", n) for n in re.findall(r"\d+(?:[ \t]{0,3}[,.]?[ \t]{0,3}\d+)*", text)]
+
+
 def fidelity_problems(raw: str, rewritten: str) -> list[str]:
     """Raisons de douter de la réécriture (liste vide : contrôles réussis)."""
     problems: list[str] = []
@@ -269,11 +276,12 @@ def fidelity_problems(raw: str, rewritten: str) -> list[str]:
         share = sum(word in raw_words for word in words) / len(words)
         if share < 0.6:
             problems.append(f"seulement {share:.0%} des mots se retrouvent dans le document")
-    raw_numbers = set(_numbers(raw))
-    numbers = _numbers(rewritten)
+    raw_numbers = set(_numbers(raw)) | set(_joined_numbers(raw))
+    numbers = _joined_numbers(MATH.sub(lambda m: m.group(0).replace("{,}", ","), rewritten))
     if len(numbers) >= 3 and raw_numbers:
         checked = True
-        share = sum(number in raw_numbers for number in numbers) / len(numbers)
+        share = sum(number in raw_numbers or all(part in raw_numbers for part in _numbers(number))
+                    for number in numbers) / len(numbers)
         if share < 0.6:
             problems.append(f"seulement {share:.0%} des nombres se retrouvent dans le document")
     if not checked:
