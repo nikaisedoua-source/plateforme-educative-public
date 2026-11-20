@@ -314,7 +314,19 @@ def original(exercise_id: int, db: Session = Depends(get_db), user: User = Depen
     """Image de la zone du document où se trouve l'exercice (fidèle à l'original)."""
     from app.rewrite import CROP_VERSION, _first_line, _siblings, region_image
 
+    from app.selection import zone_image, zones_of
+
     exercise = _exercise(db, user, exercise_id)
+    zones, decision_id = zones_of(db, exercise.id)
+    if zones:  # zone exacte relevée sur la page lors de la sélection
+        name = f"{exercise.id}-zone{decision_id}.png"
+        cached = storage.cache_path("originals", str(exercise.document_id), name)
+        if not cached.exists():
+            png = zone_image(db.get(Document, exercise.document_id), zones)
+            if png is None:
+                raise HTTPException(status_code=404, detail="Pas d'image originale pour cet exercice")
+            cached.write_bytes(png)
+        return FileResponse(cached, media_type="image/png")
     name = f"{exercise.id}-p{exercise.page_start}-{exercise.page_end}-v{CROP_VERSION}.png"
     cached = storage.cache_path("originals", str(exercise.document_id), name)
     if not cached.exists():

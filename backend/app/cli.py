@@ -232,6 +232,45 @@ def precise_cards_command(args: argparse.Namespace) -> None:
     print("Bilan :", ", ".join(f"{key} {value}" for key, value in sorted(totals.items())) or "rien à faire")
 
 
+def preview_command(args: argparse.Namespace) -> None:
+    """Rend des pages avec une règle et liste les exercices découpés sur ces pages (pour la sélection)."""
+    from pathlib import Path
+
+    from app.models import Document, Exercise
+    from app.selection import decisions, preview_page
+
+    factory = sessionmaker(bind=get_engine(), autoflush=False, expire_on_commit=False)
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    with factory() as db:
+        document = db.get(Document, args.document)
+        for page in args.pages:
+            (out / f"d{document.id}-p{page}.png").write_bytes(preview_page(document, page))
+            rows = db.scalars(select(Exercise).where(Exercise.document_id == document.id,
+                                                     Exercise.page_start <= page, Exercise.page_end >= page)
+                              .order_by(Exercise.page_start, Exercise.sort_order, Exercise.id)).all()
+            done = decisions(db, [e.id for e in rows])
+            print(f"--- document {document.id} « {document.title} », page {page}")
+            for e in rows:
+                first = (e.original_text or e.statement).strip().splitlines()[0][:70] if (e.original_text or e.statement).strip() else ""
+                verdict = done[e.id].details.get("verdict") if e.id in done else "-"
+                print(f"  {e.id} p{e.page_start}-{e.page_end} [{verdict}] {e.title[:50]} | {first}")
+
+
+def select_command(args: argparse.Namespace) -> None:
+    """Applique les décisions de sélection d'un fichier JSON (exercice retenu ou écarté, raison, zone)."""
+    from app.selection import apply_file, unpublish_unselected
+
+    factory = sessionmaker(bind=get_engine(), autoflush=False, expire_on_commit=False)
+    with factory() as db:
+        if args.retirer_non_selectionnes:
+            print(f"{unpublish_unselected(db)} exercice(s) non sélectionné(s) retiré(s) de la publication.")
+            db.commit()
+        for path in args.fichiers:
+            totals = apply_file(db, path)
+            print("Bilan :", ", ".join(f"{k} {v}" for k, v in sorted(totals.items())) or "rien")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Commandes d’administration locale de l’API")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -264,6 +303,14 @@ def main() -> None:
     write.add_argument("--sans-corrige", action="store_true", help="Ne pas réécrire les corrigés")
     write.add_argument("--corrige-seulement", action="store_true",
                        help="Relire seulement les corrigés des exercices déjà réécrits (résultats attendus)")
+    look = commands.add_parser("apercu", help="Pages rendues avec une règle et exercices découpés (sélection)")
+    look.add_argument("document", type=int)
+    look.add_argument("pages", nargs="+", type=int)
+    look.add_argument("--out", required=True)
+    choose = commands.add_parser("selectionner", help="Appliquer des décisions de sélection (fichiers JSON)")
+    choose.add_argument("fichiers", nargs="*")
+    choose.add_argument("--retirer-non-selectionnes", action="store_true",
+                        help="Retirer de la publication tout exercice qui n'a pas été retenu")
     args = parser.parse_args()
     if args.command == "create-admin":
         create_admin(args.email)
@@ -281,6 +328,10 @@ def main() -> None:
         precise_cards_command(args)
     elif args.command == "approuver-methodes":
         approve_methods_command()
+    elif args.command == "apercu":
+        preview_command(args)
+    elif args.command == "selectionner":
+        select_command(args)
     elif args.command == "rediger":
         rewrite_command(args)
 

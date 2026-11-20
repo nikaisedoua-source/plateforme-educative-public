@@ -7,6 +7,8 @@ le niveau et la ou les séries du document. Garde-fous conservés :
 - en 2nde, 1ère et Terminale, un contenu sans série reconnue n'est pas publié : les séries ne sont jamais
   mélangées (un exercice de Tle C n'est jamais montré en Tle A) ;
 - un contenu rejeté ou archivé par l'administrateur n'est jamais republié ;
+- un exercice n'est publié qu'après avoir été examiné sur la page du document et retenu (app.selection) :
+  plus aucune publication « à l'aveugle » de tout bloc titré ;
 - le réglage « publication » permet de revenir à la validation manuelle sans modifier le code.
 """
 
@@ -49,6 +51,10 @@ def blocking_reason(db: Session, item: Exercise | Flashcard, cache: dict | None 
     if not (text or "").strip():
         return "texte vide"
     if isinstance(item, Exercise):
+        from app.selection import is_kept
+
+        if is_kept(db, item, cache):  # examiné sur la page et retenu : l'élève voit la capture vérifiée
+            return None
         return quality_problem(item)
     from app.flashcards import card_problem
 
@@ -121,6 +127,11 @@ def publish(db: Session, item: Exercise | Flashcard, now: datetime, cache: dict 
     reason = blocking_reason(db, item, cache)
     if reason:
         return reason
+    if isinstance(item, Exercise):
+        from app.selection import NOT_SELECTED, is_kept
+
+        if not is_kept(db, item, cache):
+            return NOT_SELECTED
     if isinstance(item, Exercise) and cache is not None:
         original = _published_twin(db, item, cache)
         if original is not None:

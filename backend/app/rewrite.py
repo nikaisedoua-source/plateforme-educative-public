@@ -231,6 +231,10 @@ def ask_model(prompt: str, image: bytes | None, schema: dict, retry: bool = True
         raise RewriteUnavailable("Ollama est injoignable : lancez « ollama serve ».") from error
     if response.status_code == 404:
         raise RewriteUnavailable(f"Modèle absent : lancez « ollama pull {settings.ollama_vision_model} ».")
+    if response.status_code >= 500:  # « token repeat limit reached » : le modèle boucle sur une répétition
+        if retry:
+            return ask_model(prompt, image, schema, retry=False)
+        raise ValueError(f"le modèle n'a pas pu répondre ({response.text[:80]})")
     response.raise_for_status()
     content = response.json().get("message", {}).get("content", "")
     try:

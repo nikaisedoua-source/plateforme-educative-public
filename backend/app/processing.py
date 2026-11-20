@@ -216,8 +216,15 @@ def segment_document(
     existing = list(db.scalars(select(Exercise).where(Exercise.document_id == document.id)))
     if existing and not replace:
         raise ValueError("Des exercices existent déjà pour ce document (utiliser replace=true)")
+    from app.selection import decisions
+
     kept_titles: set[str] = set()
+    examined = decisions(db, [e.id for e in existing]) if existing else {}
     for exercise in existing:
+        if exercise.id in examined:  # examiné sur la page (retenu ou écarté) : jamais redécoupé ni dupliqué
+            kept_titles.add(exercise.title)
+            kept_titles.add(examined[exercise.id].details.get("titre_avant") or exercise.title)
+            continue
         touched = exercise.validated_by is not None or exercise.is_archived or exercise.status == "rejected" \
             or exercise.rewrite_status in ("ok", "doubtful")  # réécriture d'après l'image : jamais perdue
         answered = db.scalar(select(ExerciseAttempt.id).where(ExerciseAttempt.exercise_id == exercise.id).limit(1))
