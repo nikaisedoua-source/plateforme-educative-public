@@ -251,3 +251,77 @@ def classify_document(db: Session, document_id: int, subject: str, grade: str, t
     record(db, None, "classify_document", "document", document.id, avant=before,
            apres={"matiere": subject, "niveau": grade, "series": tracks}, preuve=proof)
     return count
+
+
+HEADING = r"(?:EXERCICE|Exercice)[ \t]*(\d[\d ]*|)"
+
+
+def propose_zones(document: Document, pattern: str = HEADING, margin: float = 0.055) -> list[dict]:
+    """Propose une zone par exercice, à vérifier à l'œil avant toute décision.
+
+    Chaque exercice commence à son en-tête (« EXERCICE N », couche texte du PDF) ; la coupure se fait sur la
+    première ligne entièrement blanche au-dessus de l'en-tête, pour ne pas couper une figure placée à côté.
+    Un exercice qui continue sur la page suivante reçoit une zone par page (en-tête et pied de page exclus).
+    """
+    import re
+
+    import pypdfium2 as pdfium
+    from PIL import Image
+
+    path = storage.resolve(document.storage_key)
+    heading = re.compile(pattern)
+    pdf = pdfium.PdfDocument(str(path))
+    try:
+        heads, blank, extent = [], {}, {}
+        for index in range(len(pdf)):
+            number = index + 1
+            page = pdf[index]
+            _, height = page.get_size()
+            textpage = page.get_textpage()
+            text = textpage.get_text_range(0, textpage.count_chars())
+            for match in heading.finditer(text):
+                box = textpage.get_charbox(match.start())
+                heads.append((number, 1 - box[3] / height, match.group(1).replace(" ", ""),
+                              " ".join(text[match.start():match.start() + 70].split())))
+            image = Image.open(io.BytesIO(extraction.render_pdf_page(path, number, dpi=60))).convert("L")
+            w, h = image.size
+            pixels = image.load()
+            rows = [all(pixels[x, y] > 235 for x in range(0, w, 2)) for y in range(h)]
+            blank[number] = (rows, h)
+            filled = [y for y in range(int(margin * h), int((1 - margin) * h)) if not rows[y]]
+            extent[number] = ((filled[0] - 2) / h, (filled[-1] + 3) / h) if filled else (margin, 1 - margin)
+        last = len(pdf)
+    finally:
+        pdf.close()
+    heads.sort()
+    unique = []
+    for head in heads:  # même en-tête lu deux fois
+        if not (unique and unique[-1][0] == head[0] and abs(unique[-1][1] - head[1]) < 0.03):
+            unique.append(head)
+
+    def cut(number: int, y: float) -> float:
+        rows, h = blank[number]
+        start = int(y * h)
+        for row in range(start, max(int(margin * h), start - int(0.25 * h)), -1):
+            if rows[row]:
+                return (row + 1) / h
+        return y - 0.008
+
+    starts = [(p, max(extent[p][0], cut(p, y))) for p, y, _, _ in unique]
+    proposals = []
+    for k, (page, _, number, heading_text) in enumerate(unique):
+        top = starts[k][1]
+        end_page, end_top = starts[k + 1] if k + 1 < len(unique) else (last, None)
+        zones, current = [], page
+        while True:
+            if current == end_page:
+                bottom = end_top if end_top is not None else extent[current][1]
+                if bottom - top > 0.015:
+                    zones.append(Zone(current, round(top, 3), round(min(bottom, 1), 3)))
+                break
+            if extent[current][1] - top > 0.015:
+                zones.append(Zone(current, round(top, 3), round(min(1, extent[current][1]), 3)))
+            current += 1
+            top = extent[current][0]
+        proposals.append({"numero": number, "en_tete": heading_text, "zones": [z.as_dict() for z in zones]})
+    return proposals

@@ -257,6 +257,28 @@ def preview_command(args: argparse.Namespace) -> None:
                 print(f"  {e.id} p{e.page_start}-{e.page_end} [{verdict}] {e.title[:50]} | {first}")
 
 
+def zones_command(args: argparse.Namespace) -> None:
+    """Propose les zones des exercices d'un document et rend chaque capture, à vérifier avant de décider."""
+    import json
+    from pathlib import Path
+
+    from app.models import Document
+    from app.selection import HEADING, Zone, propose_zones, zone_image
+
+    factory = sessionmaker(bind=get_engine(), autoflush=False, expire_on_commit=False)
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    with factory() as db:
+        document = db.get(Document, args.document)
+        proposals = propose_zones(document, args.motif or HEADING)
+        for k, item in enumerate(proposals):
+            png = zone_image(document, [Zone.parse(z) for z in item["zones"]])
+            if png:
+                (out / f"ex{k:03d}_{item['numero'] or 'sans-numero'}.png").write_bytes(png)
+            print(f"{k:3d} n°{item['numero'] or '?':>4} {item['en_tete'][:60]} {item['zones']}")
+        (out / "zones.json").write_text(json.dumps(proposals, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
 def select_command(args: argparse.Namespace) -> None:
     """Applique les décisions de sélection d'un fichier JSON (exercice retenu ou écarté, raison, zone)."""
     from app.selection import apply_file, unpublish_unselected
@@ -307,6 +329,10 @@ def main() -> None:
     look.add_argument("document", type=int)
     look.add_argument("pages", nargs="+", type=int)
     look.add_argument("--out", required=True)
+    zones = commands.add_parser("zones", help="Proposer la zone de chaque exercice d'un document (à vérifier)")
+    zones.add_argument("document", type=int)
+    zones.add_argument("--out", required=True)
+    zones.add_argument("--motif", default=None, help="Expression régulière de l'en-tête (groupe 1 : numéro)")
     choose = commands.add_parser("selectionner", help="Appliquer des décisions de sélection (fichiers JSON)")
     choose.add_argument("fichiers", nargs="*")
     choose.add_argument("--retirer-non-selectionnes", action="store_true",
@@ -330,6 +356,8 @@ def main() -> None:
         approve_methods_command()
     elif args.command == "apercu":
         preview_command(args)
+    elif args.command == "zones":
+        zones_command(args)
     elif args.command == "selectionner":
         select_command(args)
     elif args.command == "rediger":
