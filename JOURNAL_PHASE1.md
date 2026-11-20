@@ -55,3 +55,10 @@ Ce fichier est le point de reprise partagé pour les agents qui travaillent sur 
 - PostgreSQL `psql` et `pg_dump` 18.7 (Homebrew) sont installés et accessibles. Aucun serveur ne répond sur le port standard 5432; les tests suivants utiliseront un cluster temporaire, jamais une base utilisateur.
 - La commande Homebrew démarrée précédemment s’est terminée en échec parce qu’elle attendait une réponse interactive `y/n` avant de commencer l’installation. PostgreSQL étant déjà présent et Flutter confirmé, ne pas relancer Homebrew.
 - Prochaine étape : valider `pub get`/analyse/tests Flutter et exécuter les migrations + sauvegarde/restauration sur PostgreSQL temporaire.
+
+
+### 2026-11-20 — premières validations Flutter/PostgreSQL (01:58 UTC)
+
+- `flutter pub get` a réussi avec Flutter 3.50.1; packages résolus dans `.work/tools/pub-cache`. Le répertoire actif est la racine `lib/`; il n’y a pas encore de dossier `web/` ni de tests `test/` à la racine.
+- `flutter analyze` à la racine analysait également deux copies Flutter préexistantes. Analyse ciblée `lib/` : 10 avis de dépréciation uniquement (imports `material.dart`, `withOpacity`, et une propriété de formulaire), sans avertissement de type/lint distinct; la commande retourne néanmoins le code 1. Ne pas masquer les avis sans décision.
+- Première tentative de cluster PostgreSQL isolé : l’accès réseau local sur port fixe a été accepté, mais `initdb` s’est arrêté sur les variables de locale système avant de créer la base. Aucun dump ni changement de base utilisateur; relancer avec `--locale=C --encoding=UTF8` et `LANG=C`.
