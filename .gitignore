@@ -49,3 +49,4 @@ htmlcov/
 .work/
 .manus-*.tmp
 **/.manus-*.tmp
+backend/bin/

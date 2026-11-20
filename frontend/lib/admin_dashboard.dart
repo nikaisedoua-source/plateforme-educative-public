@@ -2,6 +2,8 @@ import 'package:material_ui/material_ui.dart';
 
 import 'api_client.dart';
 import 'parcours_picker.dart' show trackKindLabels;
+import 'library_admin_stub.dart'
+    if (dart.library.js_interop) 'library_admin.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key, required this.api, required this.onSignOut});
@@ -961,6 +963,20 @@ class _AdminDashboardState extends State<AdminDashboard> {
             tooltip: 'Actualiser les référentiels',
             onPressed: _loading ? null : _reload,
             icon: const Icon(Icons.refresh_rounded),
+          ),
+          IconButton(
+            tooltip: 'Bibliothèque documentaire',
+            onPressed: _loading
+                ? null
+                : () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => LibraryAdmin(
+                        api: widget.api,
+                        onSignOut: widget.onSignOut,
+                      ),
+                    ),
+                  ),
+            icon: const Icon(Icons.library_books_rounded),
           ),
           TextButton.icon(
             onPressed: widget.onSignOut,

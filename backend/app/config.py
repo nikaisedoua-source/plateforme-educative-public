@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     secret_key: SecretStr = Field(min_length=32)
     access_token_expire_minutes: int = Field(default=30, ge=1, le=1440)
     cors_origins: list[str] = Field(default_factory=list)
+    document_storage_path: str = Field(default="./data/documents")
+    ocr_command: str = Field(default="./bin/ocr-vision")
+    max_upload_mb: int = Field(default=200, ge=1, le=2000)
 
     @field_validator("secret_key")
     @classmethod

@@ -10,7 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.database import Base, get_db
+from app.database import Base, get_db, get_session_factory
 from app.main import app
 from app.models import User
 from app.security import hash_password
@@ -31,6 +31,7 @@ def client():
             yield session
 
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_session_factory] = lambda: TestingSession
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()

@@ -24,3 +24,8 @@ def get_db() -> Generator[Session, None, None]:
     factory = sessionmaker(bind=get_engine(), autoflush=False, expire_on_commit=False)
     with factory() as session:
         yield session
+
+
+def get_session_factory() -> sessionmaker:
+    """Fabrique de sessions pour les traitements en arrière-plan (surchargée dans les tests)."""
+    return sessionmaker(bind=get_engine(), autoflush=False, expire_on_commit=False)
