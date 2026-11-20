@@ -8,6 +8,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:web/web.dart' as web;
 
 import 'api_client.dart';
+import 'math_view.dart';
 import 'theme.dart';
 
 const documentStatusLabels = {
@@ -78,16 +79,17 @@ class StatusPill extends StatelessWidget {
 
 /// Référentiels (niveaux, matières, chapitres) chargés une fois pour les listes déroulantes.
 class Refs {
-  Refs(this.grades, this.subjects, this.chapters);
-  final List<Map<String, dynamic>> grades, subjects, chapters;
+  Refs(this.grades, this.subjects, this.chapters, this.tracks);
+  final List<Map<String, dynamic>> grades, subjects, chapters, tracks;
 
   static Future<Refs> load(ApiClient api) async {
     final results = await Future.wait([
       api.listAdmin('grades'),
       api.listAdmin('subjects'),
       api.listAdmin('chapters'),
+      api.listAdmin('tracks'),
     ]);
-    return Refs(results[0], results[1], results[2]);
+    return Refs(results[0], results[1], results[2], results[3]);
   }
 
   String name(List<Map<String, dynamic>> items, Object? id, [String key = 'name']) {
@@ -100,6 +102,16 @@ class Refs {
   String grade(Object? id) => name(grades, id);
   String subject(Object? id) => name(subjects, id);
   String chapter(Object? id) => name(chapters, id, 'title');
+
+  /// Séries d'un niveau (2nde A, C… ; 1ère A, C, D, E… ; Tle A, C, D, E…).
+  List<Map<String, dynamic>> tracksOf(int? gradeId) =>
+      tracks.where((t) => t['grade_id'] == gradeId).toList();
+
+  String series(Object? ids) {
+    final list = (ids as List?)?.cast<int>() ?? const <int>[];
+    if (list.isEmpty) return 'série à préciser';
+    return list.map((id) => name(tracks, id)).join(', ');
+  }
 }
 
 /// Image servie par l'API avec le jeton (aperçu de page, figure recadrée).
@@ -393,7 +405,8 @@ class _LibraryAdminState extends State<LibraryAdmin> {
                     Text(
                       '${document['original_filename']} · '
                       '${documentKinds[document['kind']] ?? document['kind']} · '
-                      '${refs.subject(document['subject_id'])} · ${refs.grade(document['grade_id'])} · '
+                      '${refs.subject(document['subject_id'])} · ${refs.grade(document['grade_id'])} '
+                      '(${refs.series(document['track_ids'])}) · '
                       '${document['page_count']} page(s)',
                     ),
                     if (document['status'] == 'processing') ...[
@@ -492,10 +505,14 @@ class ClassificationFields extends StatelessWidget {
     required this.subjectId,
     required this.chapterId,
     required this.onChanged,
+    this.trackIds = const [],
+    this.onTracksChanged,
   });
   final Refs refs;
   final int? gradeId, subjectId, chapterId;
   final void Function(int? grade, int? subject, int? chapter) onChanged;
+  final List<int> trackIds;
+  final void Function(List<int> tracks)? onTracksChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -563,6 +580,26 @@ class ClassificationFields extends StatelessWidget {
             },
           ),
         ),
+        if (onTracksChanged != null && refs.tracksOf(gradeId).isNotEmpty)
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              const Text('Séries visées :', style: TextStyle(fontWeight: FontWeight.w700)),
+              for (final t in refs.tracksOf(gradeId))
+                FilterChip(
+                  label: Text('${t['name']}'),
+                  selected: trackIds.contains(t['id']),
+                  onSelected: (on) => onTracksChanged!(
+                    on ? [...trackIds, t['id'] as int] : trackIds.where((id) => id != t['id']).toList(),
+                  ),
+                ),
+              if (trackIds.isEmpty)
+                const Text('obligatoire avant validation — les séries ne sont jamais mélangées',
+                    style: TextStyle(color: Colors.deepOrange)),
+            ],
+          ),
       ],
     );
   }
@@ -592,6 +629,7 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
   final _title = TextEditingController();
   String _kind = 'autre';
   int? _grade, _subject, _chapter;
+  List<int> _tracks = [];
   int _page = 1;
   bool _busy = false;
   String? _suggestion;
@@ -628,6 +666,7 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
     _title.text = '${document['title']}';
     _kind = '${document['kind']}';
     _grade = document['grade_id'] as int?;
+    _tracks = ((document['track_ids'] as List?) ?? const []).cast<int>();
     _subject = document['subject_id'] as int?;
     _chapter = document['chapter_id'] as int?;
     _pages = await widget.api.listPages(widget.documentId);
@@ -645,6 +684,7 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
       'title': _title.text.trim(),
       'kind': _kind,
       'grade_id': _grade,
+      'track_ids': _tracks,
       'subject_id': _subject,
       'chapter_id': _chapter,
     });
@@ -666,11 +706,20 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
     setState(() {
       if (guess['title'] != null) _title.text = '${guess['title']}';
       if (guess['kind'] != null) _kind = '${guess['kind']}';
-      _grade = find(widget.refs.grades, guess['grade']) ?? _grade;
+      final grade = find(widget.refs.grades, guess['grade']) ?? _grade;
+      if (grade != _grade) _tracks = [];
+      _grade = grade;
+      final letters = ((guess['series'] as List?) ?? const []).map((l) => '$l');
+      final found = [
+        for (final t in widget.refs.tracksOf(_grade))
+          if (letters.any((l) => '${t['code']}'.endsWith('-$l'))) t['id'] as int,
+      ];
+      if (found.isNotEmpty) _tracks = found;
       _subject = find(widget.refs.subjects, guess['subject']) ?? _subject;
       _suggestion =
           'Proposition lue dans le document : ${guess['title'] ?? '—'} · '
-          '${guess['grade'] ?? 'niveau ?'} · ${guess['subject'] ?? 'matière ?'} · '
+          '${guess['grade'] ?? 'niveau ?'} ${((guess['series'] as List?) ?? const []).join(', ')} · '
+          '${guess['subject'] ?? 'matière ?'} · '
           '${documentKinds[guess['kind']] ?? 'type ?'}. Vérifiez puis enregistrez.';
     });
   });
@@ -872,12 +921,15 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
         ),
         const SizedBox(height: 12),
         ClassificationFields(
-          key: ValueKey('cls-$_grade-$_subject-$_chapter'),
+          key: ValueKey('cls-$_grade-$_subject-$_chapter-${_tracks.join(',')}'),
           refs: widget.refs,
           gradeId: _grade,
           subjectId: _subject,
           chapterId: _chapter,
+          trackIds: _tracks,
+          onTracksChanged: (t) => setState(() => _tracks = t),
           onChanged: (g, s, c) => setState(() {
+            if (g != _grade) _tracks = [];
             _grade = g;
             _subject = s;
             _chapter = c;
@@ -1046,6 +1098,7 @@ class _ExerciseEditorPageState extends State<ExerciseEditorPage> {
   String _type = 'libre';
   int _difficulty = 2;
   int? _grade, _subject, _chapter;
+  List<int> _tracks = [];
   List<_OptionRow> _options = [];
   bool _busy = false;
 
@@ -1077,6 +1130,7 @@ class _ExerciseEditorPageState extends State<ExerciseEditorPage> {
     _type = '${e['exercise_type']}';
     _difficulty = e['difficulty'] as int;
     _grade = e['grade_id'] as int?;
+    _tracks = ((e['track_ids'] as List?) ?? const []).cast<int>();
     _subject = e['subject_id'] as int?;
     _chapter = e['chapter_id'] as int?;
     _options = [
@@ -1107,6 +1161,7 @@ class _ExerciseEditorPageState extends State<ExerciseEditorPage> {
       'numeric_tolerance': double.tryParse(_tolerance.text.replaceAll(',', '.')),
       'points': int.tryParse(_points.text) ?? 1,
       'grade_id': _grade,
+      'track_ids': _tracks,
       'subject_id': _subject,
       'chapter_id': _chapter,
       if (withOptions)
@@ -1322,10 +1377,21 @@ class _ExerciseEditorPageState extends State<ExerciseEditorPage> {
             controller: _statement,
             minLines: 6,
             maxLines: 18,
+            onChanged: (_) => setState(() {}),
             decoration: const InputDecoration(
               labelText: 'Énoncé',
-              helperText: 'Formules : \$x^2\$, \\frac{a}{b} ; tableaux : | a | b |',
+              helperText: r'Formules en LaTeX : $x^2$, $\frac{a}{b}$, $\sqrt{x}$, $\vec{AB}$, $$…$$ pour centrer',
             ),
+          ),
+          const SizedBox(height: 8),
+          const Text('Aperçu élève', style: TextStyle(fontWeight: FontWeight.w700)),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.black12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: MathView(api: widget.api, text: _statement.text),
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -1410,12 +1476,15 @@ class _ExerciseEditorPageState extends State<ExerciseEditorPage> {
           ],
           const SizedBox(height: 12),
           ClassificationFields(
-            key: ValueKey('ex-$_grade-$_subject-$_chapter'),
+            key: ValueKey('ex-$_grade-$_subject-$_chapter-${_tracks.join(',')}'),
             refs: widget.refs,
             gradeId: _grade,
             subjectId: _subject,
             chapterId: _chapter,
+            trackIds: _tracks,
+            onTracksChanged: (t) => setState(() => _tracks = t),
             onChanged: (g, s, c) => setState(() {
+              if (g != _grade) _tracks = [];
               _grade = g;
               _subject = s;
               _chapter = c;

@@ -333,6 +333,11 @@ class ApiClient {
     ),
   );
 
+  /// Texte avec formules LaTeX → HTML sûr (texte échappé + MathML).
+  Future<Map<String, dynamic>> renderMath(String text) async => _map(
+    await _request('POST', '/api/v1/math/render', authenticated: true, body: {'text': text}),
+  );
+
   Future<Map<String, dynamic>> createExerciseManually({
     required int documentId,
     required int page,

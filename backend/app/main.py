@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.routers import admin, auth, catalog, library
+from app.routers import admin, auth, catalog, library, mathtext
 
 
 def create_app() -> FastAPI:
@@ -20,6 +20,7 @@ def create_app() -> FastAPI:
     application.include_router(catalog.router, prefix="/api/v1")
     application.include_router(admin.router, prefix="/api/v1")
     application.include_router(library.router, prefix="/api/v1")
+    application.include_router(mathtext.router, prefix="/api/v1")
 
     @application.get("/health", tags=["santé"])
     def health():

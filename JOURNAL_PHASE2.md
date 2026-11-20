@@ -75,3 +75,15 @@ Ce fichier documente le travail Phase 2 : import de documents, extraction d'exer
 
 **À suivre** : sélecteur de séries et formules LaTeX dans l'interface ; retraitement de tous les documents importés ;
 `routers/exercises.py` et `tests/test_exercises.py` (anciens, non commités) seront réécrits en phase 3.
+
+## 2026-11-20 — Étape : formules mathématiques (LaTeX) et choix des séries dans l'interface
+
+- Les énoncés et corrigés s'écrivent en **LaTeX** (`$x^2$`, `$\frac{a}{b}$`, `$$…$$` centré). Le serveur convertit en
+  **MathML** (`latex2mathml`, hors ligne) et le navigateur dessine les formules nativement : moins de captures d'écran.
+  Le texte hors formules est échappé (aucun HTML injecté). Route `POST /api/v1/math/render`, widget `MathView`
+  (aperçu élève en direct sous l'énoncé, formules invalides signalées).
+- Écrans document et exercice : choix des **séries visées** (puces), remise à zéro si le niveau change, proposition
+  automatique d'après le contenu.
+- Base de développement : sauvegarde `.work/sauvegardes/…_avant_series.dump`, migration `b7c1d2e3f4a5` appliquée,
+  import du dossier relancé avec le nouveau code.
+- Vérifications : 25 tests backend, `flutter analyze` sans erreur, rendu vérifié sur le serveur local.
