@@ -19,7 +19,7 @@ def create_app() -> FastAPI:
     application.include_router(auth.router, prefix="/api/v1")
     application.include_router(admin.router, prefix="/api/v1")
 
-    @application.get("/health", tags=["sant"])
+    @application.get("/health", tags=["santé"])
     def health():
         return {"status": "ok"}
 

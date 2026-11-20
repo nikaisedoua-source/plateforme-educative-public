@@ -16,9 +16,9 @@ router = APIRouter(prefix="/auth", tags=["authentification"])
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     email = str(payload.email).strip().lower()
     if db.scalar(select(User.id).where(User.email == email)) is not None:
-        raise HTTPException(status_code=409, detail="Cette adresse e-mail est dj utilise")
+        raise HTTPException(status_code=409, detail="Cette adresse e-mail est déjà utilisée")
     if db.scalar(select(StudentProfile.user_id).where(StudentProfile.pseudo == payload.pseudo)) is not None:
-        raise HTTPException(status_code=409, detail="Ce pseudo est dj utilis")
+        raise HTTPException(status_code=409, detail="Ce pseudo est déjà utilisé")
     if payload.grade_id is not None and db.get(Grade, payload.grade_id) is None:
         raise HTTPException(status_code=404, detail="Niveau introuvable")
     if payload.class_id is not None:

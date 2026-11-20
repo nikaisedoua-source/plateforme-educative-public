@@ -20,7 +20,7 @@ def _save(db: Session, item):
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Un lment avec ces identifiants existe dj") from None
+        raise HTTPException(status_code=409, detail="Un élément avec ces identifiants existe déjà") from None
     db.refresh(item)
     return item
 
@@ -43,7 +43,7 @@ def list_grades(db: Session = Depends(get_db)):
 @router.post("/grades", response_model=GradeRead, status_code=status.HTTP_201_CREATED)
 def create_grade(payload: GradeCreate, db: Session = Depends(get_db)):
     if payload.cycle_id is not None and db.get(EducationalCycle, payload.cycle_id) is None:
-        raise HTTPException(status_code=404, detail="Cycle ducatif introuvable")
+        raise HTTPException(status_code=404, detail="Cycle éducatif introuvable")
     return _save(db, Grade(**payload.model_dump()))
 
 
@@ -79,5 +79,5 @@ def create_chapter(payload: ChapterCreate, db: Session = Depends(get_db)):
     if db.get(Grade, payload.grade_id) is None:
         raise HTTPException(status_code=404, detail="Niveau introuvable")
     if db.get(Subject, payload.subject_id) is None:
-        raise HTTPException(status_code=404, detail="Matire introuvable")
+        raise HTTPException(status_code=404, detail="Matière introuvable")
     return _save(db, Chapter(**payload.model_dump()))

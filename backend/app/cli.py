@@ -15,22 +15,22 @@ def create_admin(email_input: str) -> None:
     factory = sessionmaker(bind=get_engine(), autoflush=False, expire_on_commit=False)
     with factory() as db:
         if db.scalar(select(func.count()).select_from(User).where(User.role == "admin")):
-            raise SystemExit("Un administrateur existe dj : cration bootstrap refuse.")
+            raise SystemExit("Un administrateur existe déjà : création bootstrap refusée.")
         if db.scalar(select(User.id).where(User.email == email)) is not None:
-            raise SystemExit("Cette adresse e-mail est dj utilise.")
-        password = getpass("Mot de passe admin (12 caractres minimum) : ")
+            raise SystemExit("Cette adresse e-mail est déjà utilisée.")
+        password = getpass("Mot de passe admin (12 caractères minimum) : ")
         confirmation = getpass("Confirmez le mot de passe : ")
         if len(password) < 12 or password != confirmation:
-            raise SystemExit("Mot de passe trop court ou confirmation diffrente.")
+            raise SystemExit("Mot de passe trop court ou confirmation différente.")
         db.add(User(email=email, password_hash=hash_password(password), role="admin", is_active=True))
         db.commit()
-    print(f"Administrateur cr : {email}")
+    print(f"Administrateur créé : {email}")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Commandes d'administration locale de l'API")
+    parser = argparse.ArgumentParser(description="Commandes d’administration locale de l’API")
     commands = parser.add_subparsers(dest="command", required=True)
-    admin = commands.add_parser("create-admin", help="Crer le premier compte administrateur")
+    admin = commands.add_parser("create-admin", help="Créer le premier compte administrateur")
     admin.add_argument("--email", required=True)
     args = parser.parse_args()
     if args.command == "create-admin":

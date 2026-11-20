@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_name: str = "Plateforme educative API"
+    app_name: str = "Plateforme éducative API"
     database_url: str = Field(min_length=1)
     secret_key: SecretStr = Field(min_length=32)
     access_token_expire_minutes: int = Field(default=30, ge=1, le=1440)

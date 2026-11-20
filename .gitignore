@@ -4,17 +4,18 @@
 !.env.example
 !.env.sample
 
-# Bases de donnes, sauvegardes et donnes locales
+# Bases de données, sauvegardes et données locales
 *.db
 *.sqlite
 *.sqlite3
 *.dump
 *.backup
+*.sql
 /data/
 /storage/
 /uploads/
 
-# Documents pdagogiques fournis : ne jamais versionner les originaux
+# Documents pédagogiques fournis : ne jamais versionner les originaux
 /documents_organisés/
 /documents_organisés/
 
@@ -27,7 +28,7 @@ build/
 .flutter-plugins
 .flutter-plugins-dependencies
 
-# IDE et systmes d'exploitation
+# IDE et systèmes d’exploitation
 .idea/
 .vscode/
 .DS_Store
@@ -41,8 +42,9 @@ venv/
 .pytest_cache/
 .coverage
 htmlcov/
-
-# Fichiers temporaires locaux de l'environnement de travail
-/.manus-*.tmp
-**/.manus-*.tmp
 *.egg-info/
+
+# Fichiers de travail locaux
+.work/
+.manus-*.tmp
+**/.manus-*.tmp
