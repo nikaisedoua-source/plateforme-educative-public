@@ -42,18 +42,26 @@ def grade(exercise: Exercise, answer_text: str | None, option_ids: list[int] | N
         if kind == "qcm" and len(correct) > 1 and chosen and chosen < correct:
             return "partial", round(points * len(chosen) / len(correct), 2)
         return "incorrect", 0.0
-    expected = (exercise.expected_answer or "").strip()
-    if not expected or answer_text is None:
+    verdict = check_text(kind, exercise.expected_answer, exercise.numeric_tolerance, answer_text)
+    if verdict is None:
         return "submitted", 0.0
+    return ("correct", float(points)) if verdict else ("incorrect", 0.0)
+
+
+def check_text(kind: str, expected: str | None, tolerance: float | None, answer_text: str | None) -> bool | None:
+    """Réponse écrite : True/False, ou None si elle ne peut pas être corrigée automatiquement.
+    `vrai_faux` écrit (cartes mémoire) se corrige comme un texte à compléter."""
+    expected = (expected or "").strip()
+    if not expected or answer_text is None:
+        return None
     if kind == "numerique":
         given, target = parse_number(answer_text), parse_number(expected)
         if target is None:
-            return "submitted", 0.0
+            return None
         if given is None:
-            return "incorrect", 0.0
-        tolerance = exercise.numeric_tolerance or 1e-9
-        return ("correct", float(points)) if abs(given - target) <= tolerance else ("incorrect", 0.0)
-    if kind == "a_completer":
+            return False
+        return abs(given - target) <= (tolerance or 1e-9)
+    if kind in ("a_completer", "vrai_faux"):
         accepted = {_plain(item) for item in expected.split("|") if item.strip()}
-        return ("correct", float(points)) if _plain(answer_text) in accepted else ("incorrect", 0.0)
-    return "submitted", 0.0
+        return _plain(answer_text) in accepted
+    return None

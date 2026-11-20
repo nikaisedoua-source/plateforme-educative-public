@@ -8,7 +8,9 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app import extraction, storage
 from app.audit import record
-from app.models import Correction, Document, DocumentPage, Exercise, ExerciseAsset
+from app.flashcards import create_proposals
+from app.models import Correction, Document, DocumentPage, Exercise, ExerciseAsset, ExerciseAttempt
+from app.publication import publish_document
 
 
 def run_extraction(document_id: int, factory: sessionmaker, actor_id: int | None) -> None:
@@ -119,8 +121,12 @@ def segment_document(
         raise ValueError("Des exercices existent déjà pour ce document (utiliser replace=true)")
     kept_titles: set[str] = set()
     for exercise in existing:
-        if exercise.status == "validated" or exercise.is_published or exercise.published_at is not None:
-            kept_titles.add(exercise.title)  # on ne touche jamais à un contenu validé ou déjà publié
+        touched = exercise.validated_by is not None or exercise.is_archived or exercise.status == "rejected"
+        answered = db.scalar(select(ExerciseAttempt.id).where(ExerciseAttempt.exercise_id == exercise.id).limit(1))
+        if touched or answered is not None:
+            # On ne touche jamais à un contenu relu par l'administrateur ni à un exercice déjà travaillé par
+            # un élève ; un contenu publié automatiquement et jamais utilisé peut être redécoupé.
+            kept_titles.add(exercise.title)
             continue
         db.delete(exercise)
     db.flush()
@@ -182,6 +188,10 @@ def segment_document(
         created.append((exercise, seg))
     db.flush()
     figures = attach_visuals(db, document, created)
-    record(db, actor_id, "segment", "document", document.id, exercises=len(created), corrections=linked, captures=figures)
+    found_cards, created_cards = create_proposals(db, document)
+    db.flush()
+    published = publish_document(db, document)
+    record(db, actor_id, "segment", "document", document.id, exercises=len(created), corrections=linked, captures=figures,
+           flashcards=created_cards, publication=dict(published))
     db.commit()
     return len(created), linked

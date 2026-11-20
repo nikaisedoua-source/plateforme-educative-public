@@ -20,9 +20,10 @@ from app.database import get_db, get_session_factory
 from app.dependencies import require_admin
 from app.models import AppSetting, AuditLog, Correction, Document, Exercise, ExerciseAsset, ExerciseOption, User
 from app.processing import run_extraction, segment_document
+from app.publication import auto_enabled, publish, publish_all
 from app.schemas import (
     AuditLogRead, CorrectionAccessSettings, CorrectionIn, CorrectionRead, DocumentKind, DocumentPageRead, DocumentRead, DocumentUpdate,
-    ExerciseAction, ExerciseCreate, ExerciseRead, ExerciseUpdate, ExtractionReport, SegmentReport,
+    ExerciseAction, ExerciseCreate, ExerciseRead, ExerciseUpdate, ExtractionReport, PublicationSettings, SegmentReport,
 )
 
 router = APIRouter(prefix="/library", tags=["bibliothèque"], dependencies=[Depends(require_admin)])
@@ -313,6 +314,10 @@ def update_exercise(
         exercise.status = "transformed"
         exercise.is_published = False
         exercise.validated_at = None
+        if auto_enabled(db):  # publication automatique : la version corrigée par l'administrateur est republiée
+            db.flush()
+            if publish(db, exercise, datetime.now(UTC)) is None:
+                exercise.validated_by = admin.id
     record(db, admin.id, "update", "exercise", exercise_id, before=before, after=changes,
            options_changed=options is not None)
     db.commit()
@@ -344,7 +349,7 @@ def exercise_action(
             raise HTTPException(status_code=409, detail="Seul un contenu extrait ou transformé peut être soumis")
         exercise.status = "pending_validation"
     elif action == "validate":
-        if exercise.status == "validated":
+        if exercise.status == "validated" and exercise.validated_by is not None:
             raise HTTPException(status_code=409, detail="Déjà validé")
         if exercise.chapter_id is None:
             raise HTTPException(status_code=422, detail="Rattacher l'exercice à un chapitre avant de le valider")
@@ -527,3 +532,24 @@ def set_correction_access(
     record(db, admin.id, "update", "setting", None, key="correction_access", before=before, after=setting.value)
     db.commit()
     return payload
+
+
+@router.get("/settings/publication")
+def get_publication(db: Session = Depends(get_db)) -> dict:
+    return {"auto": auto_enabled(db)}
+
+
+@router.put("/settings/publication")
+def set_publication(payload: PublicationSettings, db: Session = Depends(get_db),
+                    admin: User = Depends(require_admin)) -> dict:
+    """Publication automatique de tout le contenu extrait (par défaut) ou validation manuelle."""
+    setting = db.get(AppSetting, "publication")
+    before = setting.value if setting else None
+    if setting is None:
+        setting = AppSetting(key="publication")
+        db.add(setting)
+    setting.value = {"auto": payload.auto}
+    record(db, admin.id, "update", "setting", None, key="publication", before=before, after=setting.value)
+    db.commit()
+    published = dict(publish_all(db, log=lambda _: None)) if payload.auto else {}
+    return {"auto": payload.auto, "published": published}

@@ -98,6 +98,24 @@ def reprocess_command(args: argparse.Namespace) -> None:
     print(f"{len(report.rows)} document(s) retraité(s), {total} exercice(s). Rapports : {folder}/*_{stamp}.csv")
 
 
+def publish_command() -> None:
+    """Publie tout le contenu extrait pour chaque classe (niveau et séries du document)."""
+    from app.flashcards import create_proposals
+    from app.models import Document
+    from app.publication import publish_all
+
+    factory = sessionmaker(bind=get_engine(), autoflush=False, expire_on_commit=False)
+    with factory() as db:
+        cards = 0
+        for document in db.scalars(select(Document).where(Document.status == "extracted")):
+            cards += create_proposals(db, document)[1]
+            db.commit()
+        print(f"{cards} carte(s) mémoire ajoutée(s) depuis les documents.")
+        total = publish_all(db)
+    for key, value in sorted(total.items()):
+        print(f"{key} : {value}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Commandes d’administration locale de l’API")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -115,6 +133,7 @@ def main() -> None:
     again = commands.add_parser("retraiter", help="Retraiter toute la bibliothèque jusqu'à la dernière page")
     again.add_argument("ids", nargs="*", type=int, help="Numéros de documents (par défaut : tous)")
     again.add_argument("--no-pairing", action="store_true", help="Ne pas associer les livres de corrigés")
+    commands.add_parser("publier-tout", help="Publier tout le contenu extrait pour chaque classe et série")
     args = parser.parse_args()
     if args.command == "create-admin":
         create_admin(args.email)
@@ -124,6 +143,8 @@ def main() -> None:
         import_folder_command(args)
     elif args.command == "retraiter":
         reprocess_command(args)
+    elif args.command == "publier-tout":
+        publish_command()
 
 
 if __name__ == "__main__":

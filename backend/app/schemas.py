@@ -371,6 +371,10 @@ class AuditLogRead(BaseModel):
 # --------------------------------------------------------------------------- phase 3 : espace élève
 
 
+class PublicationSettings(StrictModel):
+    auto: bool
+
+
 class CorrectionAccessSettings(StrictModel):
     """Règle générale d'accès aux corrigés (un exercice peut avoir sa propre règle)."""
 
@@ -456,3 +460,198 @@ class StudentCorrection(BaseModel):
     source: str | None
     correct_option_ids: list[int]
     expected_answer: str | None
+
+
+# --------------------------------------------------------------------------- Phase 4 : mémorisation et révisions
+
+FlashcardType = Literal["question", "definition", "formule", "vrai_faux", "a_completer", "numerique"]
+MethodCategory = Literal["rappel", "comprehension", "mnemotechnique", "organisation"]
+
+
+class FlashcardCreate(Classification):
+    """Une carte garde toujours sa source : un document (et sa page) ou un exercice de ce document."""
+
+    document_id: int | None = Field(default=None, gt=0)
+    exercise_id: int | None = Field(default=None, gt=0)
+    page_number: int | None = Field(default=None, gt=0)
+    card_type: FlashcardType = "question"
+    question: str = Field(min_length=1, max_length=4000)
+    answer: str = Field(min_length=1, max_length=8000)
+    hint: str | None = Field(default=None, max_length=1000)
+    original_text: str | None = Field(default=None, max_length=8000)
+    numeric_tolerance: float | None = Field(default=None, ge=0)
+    difficulty: int = Field(default=2, ge=1, le=3)
+
+    @model_validator(mode="after")
+    def _source(self):
+        if self.document_id is None and self.exercise_id is None:
+            raise ValueError("Indiquer le document source ou l'exercice source")
+        return self
+
+
+class FlashcardUpdate(Classification):
+    page_number: int | None = Field(default=None, gt=0)
+    card_type: FlashcardType | None = None
+    question: str | None = Field(default=None, min_length=1, max_length=4000)
+    answer: str | None = Field(default=None, min_length=1, max_length=8000)
+    hint: str | None = Field(default=None, max_length=1000)
+    numeric_tolerance: float | None = Field(default=None, ge=0)
+    difficulty: int | None = Field(default=None, ge=1, le=3)
+
+
+class FlashcardRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    document_id: int
+    page_number: int | None
+    exercise_id: int | None
+    card_type: str
+    question: str
+    answer: str
+    hint: str | None
+    original_text: str
+    numeric_tolerance: float | None
+    difficulty: int
+    grade_id: int | None
+    track_ids: list[int] = []
+    subject_id: int | None
+    chapter_id: int | None
+    status: str
+    is_published: bool
+    is_archived: bool
+    created_at: datetime
+    validated_at: datetime | None
+
+
+class ProposalReport(BaseModel):
+    document_id: int
+    found: int
+    created: int
+    already_present: int
+
+
+class MethodExampleIn(StrictModel):
+    document_id: int | None = Field(default=None, gt=0)
+    page_number: int | None = Field(default=None, gt=0)
+    exercise_id: int | None = Field(default=None, gt=0)
+    flashcard_id: int | None = Field(default=None, gt=0)
+    note: str = Field(min_length=1, max_length=4000)
+
+    @model_validator(mode="after")
+    def _source(self):
+        if self.document_id is None and self.exercise_id is None and self.flashcard_id is None:
+            raise ValueError("Un exemple doit venir d'un document, d'un exercice ou d'une carte mémoire")
+        return self
+
+
+class MethodExampleRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    document_id: int
+    page_number: int | None
+    exercise_id: int | None
+    flashcard_id: int | None
+    note: str
+    source: str = ""
+
+
+class MethodUpdate(StrictModel):
+    name: str | None = Field(default=None, min_length=1, max_length=120)
+    summary: str | None = Field(default=None, max_length=2000)
+    principle: str | None = Field(default=None, max_length=8000)
+    steps: list[str] | None = Field(default=None, max_length=20)
+
+
+class MethodRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    code: str
+    name: str
+    category: str
+    summary: str
+    principle: str | None
+    steps: list[str]
+    status: str
+    sort_order: int
+    examples: list[MethodExampleRead] = []
+
+
+class MethodAction(StrictModel):
+    action: Literal["validate", "unvalidate"]
+
+
+class SpacedRepetitionSettings(StrictModel):
+    learning_steps_days: list[float] = Field(min_length=1, max_length=6)
+    relearn_minutes: int = Field(ge=1, le=1440)
+    min_ease: float = Field(ge=1.1, le=2.5)
+    max_interval_days: int = Field(ge=7, le=3650)
+    mastery_interval_days: int = Field(ge=2, le=365)
+    new_cards_per_day: int = Field(ge=0, le=200)
+
+    @model_validator(mode="after")
+    def _steps(self):
+        if any(step <= 0 for step in self.learning_steps_days) or self.learning_steps_days != sorted(self.learning_steps_days):
+            raise ValueError("Les premiers intervalles doivent être positifs et croissants")
+        return self
+
+
+class RevisionItem(BaseModel):
+    item_type: Literal["flashcard", "exercise"]
+    item_id: int
+    title: str
+    card_type: str | None = None
+    hint: str | None = None
+    subject_id: int | None
+    chapter_id: int | None
+    mastery: str
+    due_at: datetime | None
+    self_graded: bool  # True : l'élève s'auto-évalue après avoir vu la réponse
+
+
+class RevisionStats(BaseModel):
+    due_now: int
+    due_tomorrow: int
+    new_available: int
+    by_mastery: dict[str, int]
+    reviews_total: int
+    reviews_last_7_days: int
+    next_due_at: datetime | None
+
+
+class RevisionProgram(BaseModel):
+    due: list[RevisionItem]
+    new: list[RevisionItem]
+    stats: RevisionStats
+
+
+class FlashcardReviewIn(StrictModel):
+    """Carte à correction automatique : `answer_text` ; sinon : auto-évaluation `rating` (0 à 3)."""
+
+    answer_text: str | None = Field(default=None, max_length=2000)
+    rating: int | None = Field(default=None, ge=0, le=3)
+
+
+class FlashcardAnswer(BaseModel):
+    answer: str
+    source: str
+
+
+class FlashcardReviewResult(BaseModel):
+    rating: int
+    rating_label: str
+    result: str | None
+    answer: str
+    source: str
+    mastery: str
+    next_due_at: datetime
+    interval_days: float
+
+
+class StudentMethod(BaseModel):
+    id: int
+    name: str
+    category: str
+    summary: str
+    principle: str | None
+    steps: list[str]
+    examples: list[dict]

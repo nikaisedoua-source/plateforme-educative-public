@@ -385,3 +385,180 @@ class CorrectionView(Base):
     exercise_id: Mapped[int] = mapped_column(ForeignKey("exercises.id", ondelete="CASCADE"), nullable=False)
     first_viewed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     views: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+
+
+# --------------------------------------------------------------------------- Phase 4 : mémorisation et révisions
+
+FLASHCARD_TYPES = ("question", "definition", "formule", "vrai_faux", "a_completer", "numerique")
+
+flashcard_tracks = Table(
+    "flashcard_tracks", Base.metadata,
+    Column("flashcard_id", ForeignKey("flashcards.id", ondelete="CASCADE"), primary_key=True),
+    Column("track_id", ForeignKey("tracks.id", ondelete="CASCADE"), primary_key=True),
+    Index("ix_flashcard_tracks_track", "track_id"),
+)
+
+
+class Flashcard(Base):
+    """Carte mémoire (cahier §7.2) : question ou indice, réponse attendue, référence à la source, matière,
+    chapitre, difficulté. `original_text` garde le passage source tel qu'extrait (jamais modifié)."""
+
+    __tablename__ = "flashcards"
+    __table_args__ = (
+        CheckConstraint(_in("status", CONTENT_STATUSES), name="ck_flashcards_status"),
+        CheckConstraint(_in("card_type", FLASHCARD_TYPES), name="ck_flashcards_type"),
+        CheckConstraint("difficulty BETWEEN 1 AND 3", name="ck_flashcards_difficulty"),
+        Index("ix_flashcards_grade_published", "grade_id", "is_published"),
+        Index("ix_flashcards_document", "document_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="RESTRICT"), nullable=False)
+    page_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    exercise_id: Mapped[int | None] = mapped_column(ForeignKey("exercises.id", ondelete="SET NULL"), nullable=True)
+    card_type: Mapped[str] = mapped_column(String(20), nullable=False, default="question", server_default="question")
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    answer: Mapped[str] = mapped_column(Text, nullable=False)
+    hint: Mapped[str | None] = mapped_column(Text, nullable=True)
+    original_text: Mapped[str] = mapped_column(Text, nullable=False)
+    numeric_tolerance: Mapped[float | None] = mapped_column(Float, nullable=True)
+    difficulty: Mapped[int] = mapped_column(Integer, nullable=False, default=2, server_default="2")
+    grade_id: Mapped[int | None] = mapped_column(ForeignKey("grades.id", ondelete="SET NULL"), nullable=True)
+    subject_id: Mapped[int | None] = mapped_column(ForeignKey("subjects.id", ondelete="SET NULL"), nullable=True)
+    chapter_id: Mapped[int | None] = mapped_column(ForeignKey("chapters.id", ondelete="SET NULL"), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="extracted", server_default="extracted")
+    is_published: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    validated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    validated_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    document: Mapped[Document] = relationship()
+    tracks: Mapped[list["Track"]] = relationship(secondary=flashcard_tracks, order_by="Track.sort_order, Track.name")
+
+    @property
+    def track_ids(self) -> list[int]:
+        return [track.id for track in self.tracks]
+
+
+METHOD_CATEGORIES = ("rappel", "comprehension", "mnemotechnique", "organisation")
+METHOD_STATUSES = ("draft", "validated")
+
+
+class MemoryMethod(Base):
+    """Méthode d'apprentissage (cahier §6). Bibliothèque méthodologique distincte des contenus scolaires :
+    le principe et les étapes sont rédigés puis approuvés par l'administrateur ; les exemples viennent
+    des documents fournis."""
+
+    __tablename__ = "memory_methods"
+    __table_args__ = (
+        CheckConstraint(_in("category", METHOD_CATEGORIES), name="ck_memory_methods_category"),
+        CheckConstraint(_in("status", METHOD_STATUSES), name="ck_memory_methods_status"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    code: Mapped[str] = mapped_column(String(60), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    category: Mapped[str] = mapped_column(String(20), nullable=False)
+    summary: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
+    principle: Mapped[str | None] = mapped_column(Text, nullable=True)
+    steps: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="draft", server_default="draft")
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    validated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    validated_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+    examples: Mapped[list["MethodExample"]] = relationship(
+        back_populates="method", cascade="all, delete-orphan", order_by="MethodExample.id"
+    )
+
+
+class MethodExample(Base):
+    """Exemple d'application d'une méthode, tiré d'un document (page, exercice ou carte mémoire)."""
+
+    __tablename__ = "method_examples"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    method_id: Mapped[int] = mapped_column(ForeignKey("memory_methods.id", ondelete="CASCADE"), nullable=False)
+    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id", ondelete="RESTRICT"), nullable=False)
+    page_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    exercise_id: Mapped[int | None] = mapped_column(ForeignKey("exercises.id", ondelete="SET NULL"), nullable=True)
+    flashcard_id: Mapped[int | None] = mapped_column(ForeignKey("flashcards.id", ondelete="SET NULL"), nullable=True)
+    note: Mapped[str] = mapped_column(Text, nullable=False)
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    method: Mapped[MemoryMethod] = relationship(back_populates="examples")
+    document: Mapped[Document] = relationship()
+
+
+REVIEW_ITEM_TYPES = ("flashcard", "exercise")
+MASTERY_LEVELS = ("nouveau", "a_revoir", "en_cours", "maitrise")
+
+
+class RevisionSchedule(Base):
+    """Planning de répétition espacée d'un élève pour une carte ou un exercice échoué (cahier §7.3)."""
+
+    __tablename__ = "revision_schedules"
+    __table_args__ = (
+        CheckConstraint(_in("item_type", REVIEW_ITEM_TYPES), name="ck_revision_schedules_item_type"),
+        CheckConstraint(_in("mastery", MASTERY_LEVELS), name="ck_revision_schedules_mastery"),
+        UniqueConstraint("user_id", "item_type", "item_id", name="uq_revision_schedules_item"),
+        Index("ix_revision_schedules_due", "user_id", "due_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    item_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    item_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    ease: Mapped[float] = mapped_column(Float, nullable=False, default=2.5, server_default="2.5")
+    interval_days: Mapped[float] = mapped_column(Float, nullable=False, default=0, server_default="0")
+    repetitions: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    lapses: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    mastery: Mapped[str] = mapped_column(String(20), nullable=False, default="nouveau", server_default="nouveau")
+    last_rating: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    due_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class RevisionReview(Base):
+    """Historique des révisions (jamais effacé) : note, intervalle avant/après, mode de correction."""
+
+    __tablename__ = "revision_reviews"
+    __table_args__ = (
+        CheckConstraint(_in("item_type", REVIEW_ITEM_TYPES), name="ck_revision_reviews_item_type"),
+        CheckConstraint("rating BETWEEN 0 AND 3", name="ck_revision_reviews_rating"),
+        CheckConstraint("graded_by IN ('server', 'self')", name="ck_revision_reviews_graded_by"),
+        Index("ix_revision_reviews_user", "user_id", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    item_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    item_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    rating: Mapped[int] = mapped_column(Integer, nullable=False)
+    graded_by: Mapped[str] = mapped_column(String(10), nullable=False)
+    result: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    answer_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    interval_before: Mapped[float] = mapped_column(Float, nullable=False)
+    interval_after: Mapped[float] = mapped_column(Float, nullable=False)
+    ease_after: Mapped[float] = mapped_column(Float, nullable=False)
+    due_after: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class FlashcardReveal(Base):
+    """Réponse d'une carte affichée avant auto-évaluation (pour le suivi : voir n'est pas maîtriser)."""
+
+    __tablename__ = "flashcard_reveals"
+    __table_args__ = (Index("ix_flashcard_reveals_user", "user_id", "flashcard_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    flashcard_id: Mapped[int] = mapped_column(ForeignKey("flashcards.id", ondelete="CASCADE"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())

@@ -3,7 +3,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app import extraction, storage
+from app import extraction, publication, storage
 from test_api import client, create_user  # noqa: F401
 
 PASSWORD = "mot-de-passe-DEMO-123"
@@ -12,6 +12,7 @@ PASSWORD = "mot-de-passe-DEMO-123"
 @pytest.fixture(autouse=True)
 def isolated_storage(tmp_path, monkeypatch):
     monkeypatch.setattr(storage, "storage_root", lambda: tmp_path)
+    monkeypatch.setattr(publication, "DEFAULT_AUTO", False)  # circuit de validation manuelle
     monkeypatch.setattr(extraction, "ocr_png", lambda png: "")
 
 

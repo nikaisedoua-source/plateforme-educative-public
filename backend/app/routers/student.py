@@ -15,6 +15,7 @@ from app.assets import asset_response
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.grading import AUTO_TYPES, grade
+from app.spaced import record_exercise_result
 from app.models import (
     AppSetting, Chapter, CorrectionView, Document, Exercise, ExerciseAsset, ExerciseAttempt, Subject, Track, User,
 )
@@ -189,6 +190,7 @@ def answer(exercise_id: int, payload: AttemptIn, db: Session = Depends(get_db), 
         result=result, score=score, max_score=exercise.points, after_correction=seen,
     )
     db.add(attempt)
+    record_exercise_result(db, user.id, exercise_id, result, seen)  # un exercice échoué revient en révision
     db.commit()
     available, rule = correction_state(db, exercise, _attempts(db, user, exercise_id))
     messages = {
