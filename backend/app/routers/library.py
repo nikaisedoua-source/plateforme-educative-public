@@ -18,10 +18,10 @@ from app.classification import check_classification, check_tracks, grade_has_tra
 from app.config import get_settings
 from app.database import get_db, get_session_factory
 from app.dependencies import require_admin
-from app.models import AuditLog, Correction, Document, Exercise, ExerciseAsset, ExerciseOption, User
+from app.models import AppSetting, AuditLog, Correction, Document, Exercise, ExerciseAsset, ExerciseOption, User
 from app.processing import run_extraction, segment_document
 from app.schemas import (
-    AuditLogRead, CorrectionIn, CorrectionRead, DocumentKind, DocumentPageRead, DocumentRead, DocumentUpdate,
+    AuditLogRead, CorrectionAccessSettings, CorrectionIn, CorrectionRead, DocumentKind, DocumentPageRead, DocumentRead, DocumentUpdate,
     ExerciseAction, ExerciseCreate, ExerciseRead, ExerciseUpdate, ExtractionReport, SegmentReport,
 )
 
@@ -502,3 +502,28 @@ def audit_log(
     if entity_id is not None:
         query = query.where(AuditLog.entity_id == entity_id)
     return list(db.scalars(query.order_by(AuditLog.id.desc()).limit(limit)))
+
+
+# --------------------------------------------------------------------------- réglages
+
+
+@router.get("/settings/correction-access", response_model=CorrectionAccessSettings)
+def get_correction_access(db: Session = Depends(get_db)):
+    from app.routers.student import correction_settings
+
+    return correction_settings(db)
+
+
+@router.put("/settings/correction-access", response_model=CorrectionAccessSettings)
+def set_correction_access(
+    payload: CorrectionAccessSettings, db: Session = Depends(get_db), admin: User = Depends(require_admin)
+):
+    setting = db.get(AppSetting, "correction_access")
+    before = setting.value if setting else None
+    if setting is None:
+        setting = AppSetting(key="correction_access")
+        db.add(setting)
+    setting.value = payload.model_dump()
+    record(db, admin.id, "update", "setting", None, key="correction_access", before=before, after=setting.value)
+    db.commit()
+    return payload

@@ -247,6 +247,8 @@ class Exercise(Base):
     validated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     validated_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Règle d'accès au corrigé propre à l'exercice (sinon : réglage général « correction_access »).
+    correction_access: Mapped[str | None] = mapped_column(String(30), nullable=True)
 
     document: Mapped[Document] = relationship()
     tracks: Mapped[list["Track"]] = relationship(secondary=exercise_tracks, order_by="Track.sort_order, Track.name")
@@ -332,3 +334,54 @@ class AuditLog(Base):
     entity_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     details: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+CORRECTION_ACCESS = ("always", "after_attempt", "after_success_or_attempts", "never")
+
+
+class AppSetting(Base):
+    """Réglages modifiables par l'administrateur sans toucher au code (ex. accès aux corrigés)."""
+
+    __tablename__ = "app_settings"
+
+    key: Mapped[str] = mapped_column(String(80), primary_key=True)
+    value: Mapped[dict | list | str | int | None] = mapped_column(JSON, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class ExerciseAttempt(Base):
+    """Réponse d'un élève, corrigée par le serveur (jamais par le navigateur).
+    `after_correction` : réponse donnée après avoir vu le corrigé — elle ne compte ni pour la maîtrise
+    ni pour les classements."""
+
+    __tablename__ = "exercise_attempts"
+    __table_args__ = (
+        CheckConstraint("result IN ('correct', 'incorrect', 'partial', 'submitted')", name="ck_attempts_result"),
+        Index("ix_attempts_user_exercise", "user_id", "exercise_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    exercise_id: Mapped[int] = mapped_column(ForeignKey("exercises.id", ondelete="CASCADE"), nullable=False)
+    answer_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    selected_option_ids: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    result: Mapped[str] = mapped_column(String(20), nullable=False)
+    score: Mapped[float] = mapped_column(Float, nullable=False, default=0, server_default="0")
+    max_score: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    after_correction: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class CorrectionView(Base):
+    """Consultation d'un corrigé par un élève (voir un corrigé n'est jamais une preuve de maîtrise)."""
+
+    __tablename__ = "correction_views"
+    __table_args__ = (UniqueConstraint("user_id", "exercise_id", name="uq_correction_views_user_exercise"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    exercise_id: Mapped[int] = mapped_column(ForeignKey("exercises.id", ondelete="CASCADE"), nullable=False)
+    first_viewed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    views: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")

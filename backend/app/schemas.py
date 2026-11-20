@@ -189,6 +189,7 @@ class CatalogRead(BaseModel):
 DocumentKind = Literal["manuel", "fiche", "exercices", "devoir", "examen", "corrige", "revision", "methode", "autre"]
 DocumentStatus = Literal["imported", "processing", "extracted", "failed", "archived"]
 ContentStatus = Literal["extracted", "transformed", "pending_validation", "validated", "rejected"]
+CorrectionAccess = Literal["always", "after_attempt", "after_success_or_attempts", "never"]
 ExerciseType = Literal["libre", "qcm", "vrai_faux", "a_completer", "numerique", "probleme", "etude_de_cas"]
 
 
@@ -302,6 +303,7 @@ class ExerciseUpdate(Classification):
     points: int | None = Field(default=None, ge=1, le=100)
     sort_order: int | None = Field(default=None, ge=0)
     options: list[ExerciseOptionIn] | None = Field(default=None, max_length=12)
+    correction_access: CorrectionAccess | None = None
 
 
 class ExerciseRead(BaseModel):
@@ -321,6 +323,7 @@ class ExerciseRead(BaseModel):
     expected_answer: str | None
     numeric_tolerance: float | None
     points: int
+    correction_access: CorrectionAccess | None = None
     grade_id: int | None
     track_ids: list[int] = []
     subject_id: int | None
@@ -363,3 +366,93 @@ class AuditLogRead(BaseModel):
     entity_id: int | None
     details: dict
     created_at: datetime
+
+
+# --------------------------------------------------------------------------- phase 3 : espace élève
+
+
+class CorrectionAccessSettings(StrictModel):
+    """Règle générale d'accès aux corrigés (un exercice peut avoir sa propre règle)."""
+
+    mode: CorrectionAccess = "after_attempt"
+    attempts: int = Field(default=2, ge=1, le=10)
+
+
+class StudentChapter(BaseModel):
+    id: int
+    title: str
+    exercise_count: int
+
+
+class StudentSubject(BaseModel):
+    id: int
+    name: str
+    exercise_count: int
+    chapters: list[StudentChapter]
+
+
+class StudentExerciseSummary(BaseModel):
+    id: int
+    title: str
+    exercise_type: ExerciseType
+    difficulty: int
+    points: int
+    subject_id: int | None
+    chapter_id: int | None
+    attempts: int
+    best_score: float | None
+    solved: bool
+
+
+class StudentOption(BaseModel):
+    id: int
+    label: str
+    text: str
+
+
+class StudentAsset(BaseModel):
+    id: int
+    kind: Literal["page", "image"]
+    caption: str | None
+
+
+class StudentAttemptHistory(BaseModel):
+    result: str
+    score: float
+    created_at: datetime
+    after_correction: bool
+
+
+class StudentExercise(StudentExerciseSummary):
+    """Vue élève : jamais la bonne réponse ni le corrigé (servis à part, selon la règle d'accès)."""
+
+    statement: str
+    options: list[StudentOption]
+    assets: list[StudentAsset]
+    source: str
+    correction_available: bool
+    correction_rule: str
+    history: list[StudentAttemptHistory]
+
+
+class AttemptIn(StrictModel):
+    answer_text: str | None = Field(default=None, max_length=5000)
+    option_ids: list[int] | None = Field(default=None, max_length=12)
+
+
+class AttemptResult(BaseModel):
+    result: Literal["correct", "incorrect", "partial", "submitted"]
+    score: float
+    max_score: int
+    message: str
+    after_correction: bool
+    correction_available: bool
+    correction_rule: str
+
+
+class StudentCorrection(BaseModel):
+    final_answer: str | None
+    steps: str | None
+    source: str | None
+    correct_option_ids: list[int]
+    expected_answer: str | None
