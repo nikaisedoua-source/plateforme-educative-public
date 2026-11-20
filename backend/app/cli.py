@@ -120,6 +120,29 @@ def publish_command() -> None:
         print(f"{key} : {value}")
 
 
+def verify_command(args: argparse.Namespace) -> None:
+    """Vérifie chaque exercice publié et l'exploitation de chaque document ; rapports CSV."""
+    import csv
+    from datetime import datetime
+
+    from app.storage import storage_root
+    from app.verification import verify
+
+    factory = sessionmaker(bind=get_engine(), autoflush=False, expire_on_commit=False)
+    with factory() as db:
+        report = verify(db, apply=not args.simuler)
+    folder = storage_root() / "rapports"
+    folder.mkdir(parents=True, exist_ok=True)
+    stamp = f"{datetime.now():%Y%m%d_%H%M%S}"
+    for name, rows in (("verification_exercices", report.exercises), ("verification_documents", report.documents)):
+        with (folder / f"{name}_{stamp}.csv").open("w", newline="", encoding="utf-8") as out:
+            if rows:
+                writer = csv.DictWriter(out, fieldnames=list(rows[0]))
+                writer.writeheader()
+                writer.writerows(rows)
+    print(f"Rapports : {folder}/verification_*_{stamp}.csv")
+
+
 def rewrite_command(args: argparse.Namespace) -> None:
     """Réécrit les énoncés (et les corrigés) en LaTeX avec le modèle local, matières à formules d'abord."""
     import time
@@ -193,6 +216,8 @@ def main() -> None:
     again.add_argument("ids", nargs="*", type=int, help="Numéros de documents (par défaut : tous)")
     again.add_argument("--no-pairing", action="store_true", help="Ne pas associer les livres de corrigés")
     commands.add_parser("publier-tout", help="Publier tout le contenu extrait pour chaque classe et série")
+    check = commands.add_parser("verifier", help="Vérifier chaque exercice publié et chaque document")
+    check.add_argument("--simuler", action="store_true", help="Rapport seulement, sans rien retirer")
     write = commands.add_parser("rediger", help="Réécrire les énoncés en LaTeX avec le modèle local (Ollama)")
     write.add_argument("ids", nargs="*", type=int, help="Numéros d'exercices (par défaut : tous)")
     write.add_argument("--documents", nargs="*", type=int, help="Seulement ces documents")
@@ -211,6 +236,8 @@ def main() -> None:
         reprocess_command(args)
     elif args.command == "publier-tout":
         publish_command()
+    elif args.command == "verifier":
+        verify_command(args)
     elif args.command == "rediger":
         rewrite_command(args)
 

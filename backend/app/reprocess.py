@@ -180,6 +180,12 @@ def reprocess(factory: sessionmaker, *, document_ids: list[int] | None = None, p
                 log(f"[{document_id}] {document.title} → ÉCHEC : {document.extraction_error}")
                 continue
             row.update(_identify(db, document))
+            # Le nom du fichier dit s'il s'agit d'un livre de corrigés seul ou d'énoncés avec corrigés.
+            named = extraction.kind_from_name(document.original_filename or document.title)
+            if named and named != document.kind and (named == "corrige" or document.kind == "corrige"):
+                record(db, None, "identify", "document", document_id, applied={"kind": named},
+                       before=document.kind, source="retraitement (nom du fichier)")
+                document.kind = row["kind"] = named
             # Un document fait uniquement de corrigés est un livre de corrigés.
             if document.kind != "corrige":
                 found = _segments(document)

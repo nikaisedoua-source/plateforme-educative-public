@@ -22,6 +22,7 @@ from app.models import Document, Grade, Subject, Track
 from app.processing import run_extraction, segment_document
 
 GRADE_CODES = {
+    "cp": ("CP", -4), "ce1": ("CE1", -3), "ce2": ("CE2", -2), "cm1": ("CM1", -1), "cm2": ("CM2", 0),
     "6eme": ("6E", 1), "5eme": ("5E", 2), "4eme": ("4E", 3), "3eme": ("3E", 4),
     "2nde": ("2NDE", 5), "seconde": ("2NDE", 5), "1ere": ("1RE", 6), "premiere": ("1RE", 6),
     "terminale": ("TLE", 7), "bts": ("BTS", 8),

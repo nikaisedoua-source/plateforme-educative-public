@@ -262,14 +262,19 @@ _NUMBER = r"(?:n[°o]\s*)?(?P<num>\d{1,3}|[IVX]{1,5})\b"
 # Titres numérotés : « Exercice 3 », « EXERCICE 1 (5 points) », « Application 2 », « Situation 1 », « Problème II »…
 EXERCISE_HEADING = re.compile(
     r"^\s*(?P<word>exercices?|exercises?|exo|ex\.|probl[eè]mes?|problems?|situations?(?:\s+d['’]\s*[ée]valuation)?"
-    r"|activit[ée]s?|activity|applications?|questions?\s+de\s+cours|test)\s*" + _NUMBER + r"\s*(?:[:.\-–—·)(/]|$|\s)",
+    r"|activit[ée]s?|activity|applications?|questions?\s+de\s+cours|test|sujets?|dict[ée]es?)\s*" + _NUMBER + r"\s*(?:[:.\-–—·)(/]|$|\s)",
     re.IGNORECASE,
 )
 # Rubriques d'exercices sans numéro (cahiers d'habileté, fiches ivoiriennes).
 EXERCISE_SECTION = re.compile(
     r"^\s*(?P<word>situation\s+d['’]\s*[ée]valuation|je\s+m['’]\s*exerce|je\s+m['’]\s*entra[iî]ne|je\s+m['’]\s*[ée]value"
     r"|j['’]\s*approfondi[st]?|tests?\s+objectifs?|exercices?\s+d['’]\s*(?:application|entra[iî]nement|renforcement|approfondissement)"
-    r"|activit[ée]s?\s+d['’]\s*(?:application|[ée]valuation|int[ée]gration)|[ée]valuation)\s*[:.!]?\s*$",
+    r"|activit[ée]s?\s+d['’]\s*(?:application|[ée]valuation|int[ée]gration)|[ée]valuation"
+    # Lettres, histoire-géographie, philosophie : épreuves sans le mot « exercice ».
+    r"|dissertation|commentaire\s+(?:de\s+|d['’]\s*)?(?:texte|documents?|compos[ée]|historique)"
+    r"|sujet\s+de\s+(?:dissertation|r[ée]flexion)|[ée]tude\s+de\s+(?:texte|documents?)"
+    r"|r[ée]sum[ée]\s+de\s+texte|contraction\s+de\s+texte|explication\s+de\s+texte|dict[ée]e"
+    r"|exercice\s+de\s+(?:cartographie|g[ée]ographie|carte))\s*[:.!]?\s*$",
     re.IGNORECASE,
 )
 CORRECTION_SECTION = re.compile(
@@ -487,20 +492,23 @@ def crop_png(png: bytes, box: tuple[float, float, float, float], margin: float =
 # ---------------------------------------------------------------------------
 
 GRADE_PATTERNS = [
-    ("CE1", r"\bce\s?1\b"), ("CE2", r"\bce\s?2\b"), ("CM1", r"\bcm\s?1\b"), ("CM2", r"\bcm\s?2\b"),
+    ("CP", r"\bcp\s?[12]?\b"), ("CE1", r"\bce\s?1\b"), ("CE2", r"\bce\s?2\b"), ("CM1", r"\bcm\s?1\b"), ("CM2", r"\bcm\s?2\b"),
     ("6ème", r"\b(6\s?(?:e|è|ème|eme)|sixi[eè]me)\b"), ("5ème", r"\b(5\s?(?:e|è|ème|eme)|cinqui[eè]me)\b"),
     ("4ème", r"\b(4\s?(?:e|è|ème|eme)|quatri[eè]me)\b"), ("3ème", r"\b(3\s?(?:e|è|ème|eme)|troisi[eè]me|bepc)\b"),
-    ("2nde", r"\b(2\s?(?:nde|nd)|seconde)\b"), ("1ère", r"\b(1\s?(?:ère|ere|re)|premi[eè]re)\b"),
-    ("Terminale", r"\b(t\s?les?|terminales?|bac(?:calaur[ée]at)?)\b"), ("BTS", r"\bbts\b"),
+    ("2nde", r"(\b2\s?(?:nde|nd|de)s?|(?<!\d)2de|\b2c|seconde)\b"), ("1ère", r"\b(1\s?(?:ère|ere|re)|premi[eè]re)\b"),
+    ("Terminale", r"\b(?:(?:t\s?les?|terminales?|bac(?:calaur[ée]at)?|ts\d?)\b|tle(?=[a-e]\d?\b))"), ("BTS", r"\bbts\b"),
 ]
 SUBJECT_PATTERNS = [
-    ("Mathématiques", r"\b(math[ée]matiques?|maths?|g[ée]om[ée]trie|alg[eè]bre|[ée]quations?|fonctions?)\b"),
-    ("Physique-Chimie", r"\b(physique|chimie|[ée]lectricit[ée]|m[ée]canique|optique)\b"),
+    ("Mathématiques", r"\b(math[ée]matiques?|maths?|g[ée]om[ée]trie|alg[eè]bre|[ée]quations?|fonctions?|suites?|"
+                      r"continuit[ée]|nombres\s+complexes|arithm[ée]tiques?|calcul\s+mental|transmath)\b"),
+    ("Physique-Chimie", r"\b(physique|chimie|[ée]lectricit[ée]|m[ée]canique|optique|cin[ée]matique|alcools?|amines?|"
+                        r"sciences?\s+physiques?|phy|pc)\b"),
     ("SVT", r"\b(svt|sciences?\s+de\s+la\s+vie|biologie|g[ée]ologie)\b"),
     ("Histoire-Géographie", r"\b(histoire|g[ée]ographie)\b"),
     ("Français", r"\b(fran[cç]ais|grammaire|conjugaison|orthographe|dict[ée]e|r[ée]daction)\b"),
     ("Anglais", r"\b(anglais|english)\b"),
-    ("Philosophie", r"\b(philosophie|philo)\b"),
+    ("Philosophie", r"\b(philosophie|philo|philosophiques?)\b"),
+    ("Allemand", r"\b(allemand|deutsch)\b"),
 ]
 KIND_PATTERNS = [
     ("corrige", r"\b(corrig[ée]s?|correction|solutions?)\b"),
@@ -571,6 +579,23 @@ FILENAME_SERIES_CODES = [
 ]
 
 
+_WITH_CORRECTIONS = re.compile(
+    r"(?i)(exercices?|exos?|sujets?|annales?|epreuves?|épreuves?|probl[eè]mes?)\b.*corr?ig|"
+    r"(?:\bet|\bavec|\+)\s*corrig|cours\s*\+|corrig[ée]s?\s+(?:de\s+)?(?:\d+\s+)?(?:exercices|sujets)"
+)
+_CORRECTION_WORD = re.compile(r"(?i)corr?ig|correction|\bsolutions?\b")
+
+
+def kind_from_name(filename: str) -> str | None:
+    """Nature d'un document d'après son nom : « corrige » pour un livre de corrigés seul (« CORRIGES-MATHS-
+    PYRAMIDE-3e »), « exercices » pour un recueil d'énoncés avec leurs corrigés (« AREX + CORRIGES »,
+    « Sujets corrigés »), None si le nom ne dit rien."""
+    name = unicodedata.normalize("NFC", filename).replace("_", " ").replace("-", " ")
+    if not _CORRECTION_WORD.search(name):
+        return None
+    return "exercices" if _WITH_CORRECTIONS.search(name) else "corrige"
+
+
 def identify(text: str, filename: str = "") -> dict:
     """Propositions (jamais imposées) tirées du nom de fichier et des premières pages."""
     filename = unicodedata.normalize("NFC", filename).replace("_", " ")  # « habilete_1ere » : le « _ » colle les mots
@@ -579,6 +604,6 @@ def identify(text: str, filename: str = "") -> dict:
         "title": guess_title(text),
         "grade": _first_match(GRADE_PATTERNS, sample),
         "subject": _first_match(SUBJECT_PATTERNS, sample),
-        "kind": _first_match(KIND_PATTERNS, sample),
+        "kind": kind_from_name(filename) or _first_match(KIND_PATTERNS, sample),
         "series": identify_series(text, filename),
     }

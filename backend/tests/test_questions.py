@@ -176,3 +176,44 @@ def test_fidelity_flags_copied_layout(text):
 
     raw = "EXERCICE 1 : Calcule la somme\n2 , 9 8 + 4 8, 5 7 1 + 4 9 5\n2 Thes 3-10 EB 24 25 ZONE 3 DGEM"
     assert fidelity_problems(raw, text)
+
+
+@pytest.mark.parametrize("name,kind", [
+    ("CORRIGES-MATHS-PYRAMIDE-3e.pdf", "corrige"), ("Corrigé MATHS Pyr 2ndC.pdf", "corrige"),
+    ("PYRAMIDE TleD corrigé.pdf", "corrige"), ("Devoir_CM2_Cote_dIvoire_2026_2027_Corrige.pdf", "corrige"),
+    ("AREX +CORRIGES TleC.pdf", "exercices"), ("Sujets Corrigés Sciences Physique Terminale C, D et E.pdf", "exercices"),
+    ("CHIMIE TS2 exos corrigés.pdf", "exercices"), ("Exercise_svt_et_corrigé_.pdf", "exercices"),
+    ("Livre 220 Exercices Corrigés Mathématiques 1re.pdf", "exercices"), ("pyramide 4e.pdf", None),
+])
+def test_kind_from_name(name, kind):
+    from app.extraction import kind_from_name
+
+    assert kind_from_name(name) == kind
+
+
+def test_segment_recognises_humanities_subjects():
+    from app.extraction import segment
+
+    text = ("Sujet 1 :\nLa décolonisation de l'Afrique : causes et conséquences. Analyse ce sujet.\n"
+            "Commentaire de document\nTexte : Discours de Roosevelt. Présente le document puis explique-le.\n"
+            "Dissertation\nLe travail libère-t-il l'homme ? Tu répondras de façon argumentée.")
+    found = segment([(1, text)])
+    assert [s.heading.lower() for s in found] == ["sujet", "commentaire de document", "dissertation"]
+
+
+@pytest.mark.parametrize("statement,problem", [
+    ("Exercice 9\n    Les figures b et c.", "énoncé trop court"),
+    ("Exercice 1\nRésous dans R l'équation 2x + 3 = 7 puis vérifie ta réponse.", None),
+    ("Sommaire\nLeçon 1 : nombres entiers ........ 3\nLeçon 2 : fractions ........ 9\n"
+     "Leçon 3 : proportionnalité ........ 15\nLeçon 4 : géométrie plane ........ 21", "page de sommaire"),
+    ("Exercice 1\n" + "Calcule la somme des nombres. " * 500, "énoncé trop long"),
+])
+def test_quality_problem(statement, problem):
+    from app.models import Exercise
+    from app.publication import quality_problem
+
+    found = quality_problem(Exercise(statement=statement, rewrite_status="none"))
+    if problem is None:
+        assert found is None
+    else:
+        assert found and found.startswith(problem)

@@ -10,6 +10,7 @@ le niveau et la ou les séries du document. Garde-fous conservés :
 - le réglage « publication » permet de revenir à la validation manuelle sans modifier le code.
 """
 
+import re
 from collections import Counter
 from datetime import UTC, datetime
 
@@ -47,6 +48,32 @@ def blocking_reason(db: Session, item: Exercise | Flashcard, cache: dict | None 
     text = item.statement if isinstance(item, Exercise) else item.question
     if not (text or "").strip():
         return "texte vide"
+    if isinstance(item, Exercise):
+        return quality_problem(item)
+    return None
+
+
+MIN_LETTERS = 40
+MAX_LENGTH = 12000
+
+
+def quality_problem(exercise: Exercise) -> str | None:
+    """Contrôle qualité avant publication (vérification de chaque exercice publié) : un énoncé qu'un élève
+    ne pourrait pas lire ou comprendre n'est pas publié ; il reste visible par l'administrateur."""
+    from app.extraction import garbled
+
+    text = exercise.statement or ""
+    rewritten_ok = exercise.rewrite_status == "ok" and bool((exercise.statement_latex or "").strip())
+    if sum(char.isalpha() for char in text) < MIN_LETTERS and not rewritten_ok:
+        return "énoncé trop court (titre seul ou consigne coupée)"
+    if garbled(text) and not rewritten_ok:
+        return "texte illisible (en attente de réécriture d'après l'image)"
+    if len(text) > MAX_LENGTH:
+        return "énoncé trop long (plusieurs exercices fusionnés)"
+    lines = [line for line in text.splitlines() if line.strip()]
+    toc = sum(bool(re.search(r"(\.{4,}|…{2,})\s*\d+\s*$", line)) for line in lines)
+    if toc >= 3 and toc > 0.3 * len(lines):
+        return "page de sommaire, pas un exercice"
     return None
 
 
@@ -60,6 +87,31 @@ def _inherit(item: Exercise | Flashcard, document: Document) -> None:
         item.tracks = list(document.tracks)
 
 
+def fingerprint(text: str) -> str:
+    import unicodedata
+
+    folded = unicodedata.normalize("NFKD", text or "").encode("ascii", "ignore").decode().lower()
+    return re.sub(r"[^a-z0-9]+", "", folded)[:400]
+
+
+def _published_twin(db: Session, item: Exercise, cache: dict) -> int | None:
+    """Le même énoncé est-il déjà publié pour ce niveau ? (un doublon n'est publié qu'une fois)"""
+    key = ("fingerprints", item.grade_id)
+    if key not in cache:
+        rows = db.execute(select(Exercise.id, Exercise.statement).where(
+            Exercise.is_published.is_(True), Exercise.grade_id == item.grade_id).order_by(Exercise.id))
+        known: dict[str, int] = {}
+        for exercise_id, statement in rows:
+            known.setdefault(fingerprint(statement), exercise_id)
+        cache[key] = known
+    known = cache[key]
+    mark = fingerprint(item.statement)
+    if mark in known and known[mark] != item.id:
+        return known[mark]
+    known[mark] = item.id
+    return None
+
+
 def publish(db: Session, item: Exercise | Flashcard, now: datetime, cache: dict | None = None) -> str | None:
     """Publie un contenu s'il peut l'être ; renvoie la raison sinon."""
     if item.is_archived or item.status == "rejected":
@@ -67,6 +119,10 @@ def publish(db: Session, item: Exercise | Flashcard, now: datetime, cache: dict 
     reason = blocking_reason(db, item, cache)
     if reason:
         return reason
+    if isinstance(item, Exercise) and cache is not None:
+        original = _published_twin(db, item, cache)
+        if original is not None:
+            return f"doublon de l'exercice n° {original}"
     if item.status != "validated":
         item.status = "validated"
         item.validated_at = now
