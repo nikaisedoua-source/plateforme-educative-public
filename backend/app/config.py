@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     document_storage_path: str = Field(default="./data/documents")
     ocr_command: str = Field(default="./bin/ocr-vision")
     max_upload_mb: int = Field(default=200, ge=1, le=2000)
+    # Modèle local (Ollama) qui relit l'image des exercices pour réécrire les formules en LaTeX.
+    ollama_url: str = Field(default="http://localhost:11434")
+    ollama_vision_model: str = Field(default="qwen2.5vl:7b")
 
     @field_validator("secret_key")
     @classmethod

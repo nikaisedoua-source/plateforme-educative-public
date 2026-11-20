@@ -134,6 +134,7 @@ PAGE_METHODS = ("text", "ocr", "empty")
 # un contenu est ensuite extrait, éventuellement transformé, soumis puis validé (ou refusé).
 CONTENT_STATUSES = ("extracted", "transformed", "pending_validation", "validated", "rejected")
 EXERCISE_TYPES = ("libre", "qcm", "vrai_faux", "a_completer", "numerique", "probleme", "etude_de_cas")
+REWRITE_STATUSES = ("none", "ok", "doubtful", "failed")
 
 
 def _in(column: str, values: tuple[str, ...]) -> str:
@@ -220,6 +221,7 @@ class Exercise(Base):
         CheckConstraint(_in("status", CONTENT_STATUSES), name="ck_exercises_status"),
         CheckConstraint(_in("exercise_type", EXERCISE_TYPES), name="ck_exercises_type"),
         CheckConstraint("difficulty BETWEEN 1 AND 3", name="ck_exercises_difficulty"),
+        CheckConstraint(_in("rewrite_status", REWRITE_STATUSES), name="ck_exercises_rewrite_status"),
         Index("ix_exercises_chapter_published", "chapter_id", "is_published"),
     )
 
@@ -249,8 +251,18 @@ class Exercise(Base):
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # Règle d'accès au corrigé propre à l'exercice (sinon : réglage général « correction_access »).
     correction_access: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    # Énoncé réécrit en LaTeX par le modèle local d'après l'image du document (`statement` reste l'extraction
+    # brute) ; `rewrite_status` : none (pas encore relu), ok (contrôles réussis), doubtful (l'image originale
+    # est alors montrée en premier), failed.
+    statement_latex: Mapped[str | None] = mapped_column(Text, nullable=True)
+    rewrite_status: Mapped[str] = mapped_column(String(12), nullable=False, default="none", server_default="none")
+    rewrite_model: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    rewritten_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     document: Mapped[Document] = relationship()
+    questions: Mapped[list["ExerciseQuestion"]] = relationship(
+        back_populates="exercise", cascade="all, delete-orphan", order_by="ExerciseQuestion.sort_order"
+    )
     tracks: Mapped[list["Track"]] = relationship(secondary=exercise_tracks, order_by="Track.sort_order, Track.name")
     options: Mapped[list["ExerciseOption"]] = relationship(
         back_populates="exercise", cascade="all, delete-orphan", order_by="ExerciseOption.sort_order"
@@ -265,6 +277,45 @@ class Exercise(Base):
     @property
     def track_ids(self) -> list[int]:
         return [track.id for track in self.tracks]
+
+
+class ExerciseQuestion(Base):
+    """Question numérotée d'un exercice (1., 2.a…). `kind` : « result » (réponse courte vérifiée par le serveur
+    quand le corrigé donne le résultat) ou « proof » (démonstration : réponse facultative, auto-évaluée).
+    `expected_answer` n'est renseigné que si le résultat figure dans le corrigé fourni (jamais inventé)."""
+
+    __tablename__ = "exercise_questions"
+    __table_args__ = (CheckConstraint("kind IN ('result', 'proof')", name="ck_exercise_questions_kind"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    exercise_id: Mapped[int] = mapped_column(ForeignKey("exercises.id", ondelete="CASCADE"), nullable=False, index=True)
+    label: Mapped[str] = mapped_column(String(20), nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    kind: Mapped[str] = mapped_column(String(10), nullable=False, default="result", server_default="result")
+    expected_answer: Mapped[str | None] = mapped_column(Text, nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+
+    exercise: Mapped["Exercise"] = relationship(back_populates="questions")
+
+
+class QuestionAttempt(Base):
+    """Réponse d'un élève à une question. `result` : correct / incorrect (vérifié par le serveur), submitted
+    (pas de résultat de référence), self_ok / self_review (auto-évaluation après lecture du corrigé)."""
+
+    __tablename__ = "question_attempts"
+    __table_args__ = (
+        CheckConstraint("result IN ('correct', 'incorrect', 'submitted', 'self_ok', 'self_review')",
+                        name="ck_question_attempts_result"),
+        Index("ix_question_attempts_user_question", "user_id", "question_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    question_id: Mapped[int] = mapped_column(ForeignKey("exercise_questions.id", ondelete="CASCADE"), nullable=False)
+    answer_latex: Mapped[str | None] = mapped_column(Text, nullable=True)
+    result: Mapped[str] = mapped_column(String(12), nullable=False)
+    after_correction: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
 
 class ExerciseOption(Base):
@@ -316,6 +367,8 @@ class Correction(Base):
     source_page: Mapped[int | None] = mapped_column(Integer, nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="extracted", server_default="extracted")
     validated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    text_latex: Mapped[str | None] = mapped_column(Text, nullable=True)  # corrigé réécrit en LaTeX
+    rewrite_status: Mapped[str] = mapped_column(String(12), nullable=False, default="none", server_default="none")
 
     exercise: Mapped[Exercise] = relationship(back_populates="correction")
     source_document: Mapped[Document] = relationship()

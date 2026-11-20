@@ -23,6 +23,7 @@ dependencies = [
   "pypdfium2>=4.30,<6.0",
   "pillow>=10.0,<13.0",
   "latex2mathml>=3.77,<4.0",
+  "sympy>=1.13,<2.0",
 ]
 
 [project.optional-dependencies]

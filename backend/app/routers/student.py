@@ -11,16 +11,22 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
+from fastapi.responses import FileResponse
+
+from app import storage
+from app.answers import equivalent
 from app.assets import asset_response
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.grading import AUTO_TYPES, grade
 from app.spaced import record_exercise_result
 from app.models import (
-    AppSetting, Chapter, CorrectionView, Document, Exercise, ExerciseAsset, ExerciseAttempt, Subject, Track, User,
+    AppSetting, Chapter, CorrectionView, Document, Exercise, ExerciseAsset, ExerciseAttempt, ExerciseQuestion,
+    QuestionAttempt, Subject, Track, User,
 )
 from app.schemas import (
-    AttemptIn, AttemptResult, StudentCorrection, StudentExercise, StudentExerciseSummary, StudentSubject,
+    AttemptIn, AttemptResult, QuestionAttemptIn, QuestionAttemptResult, StudentCorrection, StudentExercise,
+    StudentExerciseSummary, StudentSubject,
 )
 
 router = APIRouter(prefix="/student", tags=["student"])
@@ -78,14 +84,25 @@ def _attempts(db: Session, user: User, exercise_id: int) -> list[ExerciseAttempt
     ))
 
 
-def correction_state(db: Session, exercise: Exercise, attempts: list[ExerciseAttempt]) -> tuple[bool, str]:
-    """(corrigé consultable maintenant ?, explication pour l'élève)."""
+def _question_attempts(db: Session, user: User, exercise: Exercise) -> list[QuestionAttempt]:
+    ids = [q.id for q in exercise.questions]
+    if not ids:
+        return []
+    return list(db.scalars(select(QuestionAttempt).where(
+        QuestionAttempt.user_id == user.id, QuestionAttempt.question_id.in_(ids)).order_by(QuestionAttempt.id)))
+
+
+def correction_state(db: Session, exercise: Exercise, attempts: list[ExerciseAttempt],
+                     question_attempts: list[QuestionAttempt] | None = None) -> tuple[bool, str]:
+    """(corrigé consultable maintenant ?, explication pour l'élève). Répondre à une seule question compte
+    comme une tentative : l'élève n'est jamais obligé de rédiger les démonstrations."""
     settings = correction_settings(db)
     mode = exercise.correction_access or settings["mode"]
     needed = int(settings.get("attempts") or 2)
-    has_answer_key = exercise.exercise_type in AUTO_TYPES and (
+    answered = [a for a in question_attempts or [] if a.result in ("correct", "incorrect", "submitted")]
+    has_answer_key = (exercise.exercise_type in AUTO_TYPES and (
         any(o.is_correct for o in exercise.options) or bool(exercise.expected_answer)
-    )
+    )) or any(q.expected_answer for q in exercise.questions)
     validated = exercise.correction is not None and exercise.correction.status == "validated"
     if not validated and not has_answer_key:
         return False, "Pas encore de corrigé validé pour cet exercice"
@@ -95,9 +112,9 @@ def correction_state(db: Session, exercise: Exercise, attempts: list[ExerciseAtt
     if mode == "never":
         return False, label
     if mode == "after_attempt":
-        return bool(attempts), label
-    succeeded = any(a.result == "correct" for a in attempts)
-    return succeeded or len(attempts) >= needed, label
+        return bool(attempts) or bool(answered), label
+    succeeded = any(a.result == "correct" for a in [*attempts, *answered])
+    return succeeded or len(attempts) + len(answered) >= needed, label
 
 
 def _summary(db: Session, user: User, exercise: Exercise) -> dict:
@@ -153,10 +170,23 @@ def my_exercises(
 def my_exercise(exercise_id: int, db: Session = Depends(get_db), user: User = Depends(require_student)):
     exercise = _exercise(db, user, exercise_id)
     attempts = _attempts(db, user, exercise_id)
-    available, rule = correction_state(db, exercise, attempts)
+    question_attempts = _question_attempts(db, user, exercise)
+    available, rule = correction_state(db, exercise, attempts, question_attempts)
     document = db.get(Document, exercise.document_id)
+    rewritten = exercise.statement_latex if exercise.rewrite_status in ("ok", "doubtful") else None
+    last: dict[int, QuestionAttempt] = {a.question_id: a for a in question_attempts}
+    has_original = document.mime_type == "application/pdf" or document.mime_type.startswith("image/")
     return _summary(db, user, exercise) | {
-        "statement": exercise.statement,
+        "statement": rewritten or exercise.statement,
+        "rewrite_status": exercise.rewrite_status,
+        "original_first": exercise.rewrite_status != "ok" and has_original,
+        "original_pages": list(range(exercise.page_start, exercise.page_end + 1)) if has_original else [],
+        "questions": [{
+            "id": q.id, "label": q.label, "text": q.text, "kind": q.kind,
+            "checkable": q.kind == "result" and bool(q.expected_answer),
+            "last_result": last[q.id].result if q.id in last else None,
+            "last_answer": last[q.id].answer_latex if q.id in last else None,
+        } for q in (exercise.questions if rewritten else [])],
         "options": [{"id": o.id, "label": o.label, "text": o.text} for o in exercise.options],
         "assets": [{"id": a.id, "kind": a.kind, "caption": a.caption} for a in exercise.assets],
         "source": f"{document.title}, p. {exercise.page_start}"
@@ -204,7 +234,8 @@ def answer(exercise_id: int, payload: AttemptIn, db: Session = Depends(get_db), 
 @router.get("/exercises/{exercise_id}/correction", response_model=StudentCorrection)
 def correction(exercise_id: int, db: Session = Depends(get_db), user: User = Depends(require_student)):
     exercise = _exercise(db, user, exercise_id)
-    available, rule = correction_state(db, exercise, _attempts(db, user, exercise_id))
+    available, rule = correction_state(db, exercise, _attempts(db, user, exercise_id),
+                                       _question_attempts(db, user, exercise))
     if not available:
         raise HTTPException(status_code=403, detail=rule)
     view = db.scalar(select(CorrectionView).where(
@@ -222,10 +253,74 @@ def correction(exercise_id: int, db: Session = Depends(get_db), user: User = Dep
     return {
         "final_answer": validated.final_answer if validated else None,
         "steps": validated.steps if validated else None,
+        "text_latex": validated.text_latex if validated and validated.rewrite_status in ("ok", "doubtful") else None,
         "source": source,
+        "question_answers": {q.label: q.expected_answer for q in exercise.questions if q.expected_answer},
         "correct_option_ids": [o.id for o in exercise.options if o.is_correct],
         "expected_answer": exercise.expected_answer if exercise.exercise_type in AUTO_TYPES else None,
     }
+
+
+@router.post("/questions/{question_id}/attempts", response_model=QuestionAttemptResult, status_code=201)
+def answer_question(question_id: int, payload: QuestionAttemptIn, db: Session = Depends(get_db),
+                    user: User = Depends(require_student)):
+    """Réponse à une question. Résultat vérifié par le serveur (écritures équivalentes acceptées) ;
+    démonstration : enregistrée puis auto-évaluée avec le corrigé ; jamais obligatoire."""
+    question = db.get(ExerciseQuestion, question_id)
+    if question is None:
+        raise HTTPException(status_code=404, detail="Question introuvable")
+    exercise = _exercise(db, user, question.exercise_id)
+    seen = db.scalar(select(CorrectionView.id).where(
+        CorrectionView.user_id == user.id, CorrectionView.exercise_id == exercise.id)) is not None
+    if payload.self_check:
+        if not seen:
+            raise HTTPException(status_code=409, detail="Ouvrez d'abord la correction pour vous auto-évaluer")
+        result, answer_text = payload.self_check, None
+    else:
+        answer_text = (payload.answer_latex or "").strip()
+        if not answer_text:
+            raise HTTPException(status_code=422, detail="Écrire une réponse")
+        last = db.scalar(select(func.max(QuestionAttempt.created_at)).where(
+            QuestionAttempt.user_id == user.id, QuestionAttempt.question_id == question_id))
+        if last is not None and (datetime.now(UTC) - last.replace(tzinfo=last.tzinfo or UTC)).total_seconds() < 2:
+            raise HTTPException(status_code=429, detail="Patientez quelques secondes avant de répondre à nouveau")
+        verdict = equivalent(answer_text, question.expected_answer) if question.kind == "result" else None
+        result = "submitted" if verdict is None else ("correct" if verdict else "incorrect")
+    db.add(QuestionAttempt(user_id=user.id, question_id=question_id, answer_latex=answer_text or None,
+                           result=result, after_correction=seen))
+    if result in ("correct", "incorrect"):
+        record_exercise_result(db, user.id, exercise.id, result, seen)  # une question ratée revient en révision
+    db.commit()
+    available, rule = correction_state(db, exercise, _attempts(db, user, exercise.id),
+                                       _question_attempts(db, user, exercise))
+    messages = {
+        "correct": "Bonne réponse !", "incorrect": "Pas encore : vérifiez votre calcul.",
+        "submitted": "Réponse enregistrée : comparez-la à la correction.",
+        "self_ok": "Bravo, c'est noté.", "self_review": "Noté : cette question reviendra en révision.",
+    }
+    return {"result": result, "message": messages[result], "after_correction": seen,
+            "correction_available": available, "correction_rule": rule}
+
+
+@router.get("/exercises/{exercise_id}/original.png")
+def original(exercise_id: int, db: Session = Depends(get_db), user: User = Depends(require_student)):
+    """Image de la zone du document où se trouve l'exercice (fidèle à l'original)."""
+    from app.rewrite import _first_line, _siblings, region_image
+
+    exercise = _exercise(db, user, exercise_id)
+    cached = storage.cache_path("originals", str(exercise.document_id), f"{exercise.id}.png")
+    if not cached.exists():
+        document = db.get(Document, exercise.document_id)
+        try:
+            png = region_image(document, exercise.page_start, exercise.page_end,
+                               _first_line(exercise.original_text or exercise.statement),
+                               _siblings(db, document.id))
+        except Exception:
+            png = None
+        if png is None:
+            raise HTTPException(status_code=404, detail="Pas d'image originale pour cet exercice")
+        cached.write_bytes(png)
+    return FileResponse(cached, media_type="image/png")
 
 
 @router.get("/assets/{asset_id}")

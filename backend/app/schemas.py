@@ -427,10 +427,28 @@ class StudentAttemptHistory(BaseModel):
     after_correction: bool
 
 
+class StudentQuestion(BaseModel):
+    """Question d'un exercice. `checkable` : le serveur peut vérifier un résultat (jamais envoyé ici)."""
+
+    id: int
+    label: str
+    text: str
+    kind: Literal["result", "proof"]
+    checkable: bool
+    last_result: str | None
+    last_answer: str | None
+
+
 class StudentExercise(StudentExerciseSummary):
-    """Vue élève : jamais la bonne réponse ni le corrigé (servis à part, selon la règle d'accès)."""
+    """Vue élève : jamais la bonne réponse ni le corrigé (servis à part, selon la règle d'accès).
+    `statement` : énoncé réécrit en LaTeX quand il existe, sinon l'extraction ; `original_first` : la réécriture
+    est absente ou douteuse, l'image originale du document est alors montrée en premier."""
 
     statement: str
+    rewrite_status: str
+    original_first: bool
+    original_pages: list[int]
+    questions: list[StudentQuestion]
     options: list[StudentOption]
     assets: list[StudentAsset]
     source: str
@@ -457,9 +475,24 @@ class AttemptResult(BaseModel):
 class StudentCorrection(BaseModel):
     final_answer: str | None
     steps: str | None
+    text_latex: str | None = None
     source: str | None
     correct_option_ids: list[int]
     expected_answer: str | None
+    question_answers: dict[str, str] = Field(default_factory=dict)
+
+
+class QuestionAttemptIn(StrictModel):
+    answer_latex: str | None = Field(default=None, max_length=5000)
+    self_check: Literal["self_ok", "self_review"] | None = None
+
+
+class QuestionAttemptResult(BaseModel):
+    result: Literal["correct", "incorrect", "submitted", "self_ok", "self_review"]
+    message: str
+    after_correction: bool
+    correction_available: bool
+    correction_rule: str
 
 
 # --------------------------------------------------------------------------- Phase 4 : mémorisation et révisions

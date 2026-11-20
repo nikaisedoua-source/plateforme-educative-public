@@ -120,6 +120,61 @@ def publish_command() -> None:
         print(f"{key} : {value}")
 
 
+def rewrite_command(args: argparse.Namespace) -> None:
+    """Réécrit les énoncés (et les corrigés) en LaTeX avec le modèle local, matières à formules d'abord."""
+    import time
+
+    from sqlalchemy import case
+
+    from app import storage
+    from app.models import Exercise, Subject
+    from app.rewrite import RewriteUnavailable, _PageCache, rewrite_correction, rewrite_exercise
+
+    factory = sessionmaker(bind=get_engine(), autoflush=False, expire_on_commit=False)
+    priority = case((Subject.name == "Mathématiques", 0), (Subject.name == "Physique-Chimie", 1),
+                    (Subject.name == "SVT", 2), else_=3)
+    with factory() as db:
+        query = select(Exercise.id).outerjoin(Subject, Subject.id == Exercise.subject_id).where(
+            Exercise.is_archived.is_(False))
+        if args.ids:
+            query = query.where(Exercise.id.in_(args.ids))
+        if args.documents:
+            query = query.where(Exercise.document_id.in_(args.documents))
+        if args.matieres:
+            query = query.where(Subject.name.in_(args.matieres))
+        if not args.refaire:
+            query = query.where(Exercise.rewrite_status == "none")
+        ids = list(db.scalars(query.order_by(Exercise.is_published.desc(), priority, Exercise.document_id,
+                                             Exercise.sort_order, Exercise.id).limit(args.limite)))
+    print(f"{len(ids)} exercice(s) à réécrire.", flush=True)
+    caches: dict[int, _PageCache] = {}
+    counts: dict[str, int] = {}
+    for number, exercise_id in enumerate(ids, start=1):
+        started = time.monotonic()
+        with factory() as db:
+            exercise = db.get(Exercise, exercise_id)
+            cache = caches.setdefault(exercise.document_id, _PageCache(storage.resolve(exercise.document.storage_key)))
+            try:
+                status = rewrite_exercise(db, exercise, cache)
+                corrected = "—"
+                if not args.sans_corrige and status != "failed" and exercise.correction is not None:
+                    corrected = rewrite_correction(db, exercise)
+                db.commit()
+            except RewriteUnavailable as error:
+                print(error, flush=True)
+                return
+            except Exception as error:  # un exercice illisible n'arrête pas la série
+                db.rollback()
+                exercise = db.get(Exercise, exercise_id)
+                exercise.rewrite_status = "failed"
+                db.commit()
+                status, corrected = "failed", f"erreur : {str(error)[:80]}"
+            counts[status] = counts.get(status, 0) + 1
+            print(f"[{number}/{len(ids)}] exercice {exercise_id} : {status} ({len(exercise.questions)} question(s), "
+                  f"corrigé {corrected}) en {time.monotonic() - started:.0f} s", flush=True)
+    print("Bilan :", ", ".join(f"{key} {value}" for key, value in sorted(counts.items())) or "rien à faire")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Commandes d’administration locale de l’API")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -138,6 +193,13 @@ def main() -> None:
     again.add_argument("ids", nargs="*", type=int, help="Numéros de documents (par défaut : tous)")
     again.add_argument("--no-pairing", action="store_true", help="Ne pas associer les livres de corrigés")
     commands.add_parser("publier-tout", help="Publier tout le contenu extrait pour chaque classe et série")
+    write = commands.add_parser("rediger", help="Réécrire les énoncés en LaTeX avec le modèle local (Ollama)")
+    write.add_argument("ids", nargs="*", type=int, help="Numéros d'exercices (par défaut : tous)")
+    write.add_argument("--documents", nargs="*", type=int, help="Seulement ces documents")
+    write.add_argument("--matieres", nargs="*", help="Seulement ces matières (ex. Mathématiques)")
+    write.add_argument("--limite", type=int, default=None, help="Nombre maximal d'exercices")
+    write.add_argument("--refaire", action="store_true", help="Refaire aussi les exercices déjà réécrits")
+    write.add_argument("--sans-corrige", action="store_true", help="Ne pas réécrire les corrigés")
     args = parser.parse_args()
     if args.command == "create-admin":
         create_admin(args.email)
@@ -149,6 +211,8 @@ def main() -> None:
         reprocess_command(args)
     elif args.command == "publier-tout":
         publish_command()
+    elif args.command == "rediger":
+        rewrite_command(args)
 
 
 if __name__ == "__main__":
