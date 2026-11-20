@@ -70,3 +70,8 @@ Ce fichier est le point de reprise partagé pour les agents qui travaillent sur 
 - Flutter : `pub get` passe. `flutter analyze lib --no-pub --no-fatal-infos` rapporte 10 avis de dépréciation dans le prototype racine et retourne 1; aucune correction de migration Material n’a été faite, car elle touche largement le prototype existant et mérite un choix de KILO. `flutter test --no-pub` ne peut pas démarrer : le dossier `test/` n’existe pas.
 - Le Flutter racine ne contient pas non plus de dossier `web/`; les répertoires Flutter historiques sont des copies présentes à la racine et n’ont pas été déplacés, copiés ou modifiés.
 - **Suite recommandée à KILO :** choisir le répertoire Flutter canonique (`frontend/` selon `AGENTS.md` ou conserver le projet racine), ajouter le squelette Web et tests; brancher l’inscription/connexion/admin sur FastAPI. Le backend et les critères de migration/sauvegarde Phase 1 sont prêts; la Phase 1 entière n’est pas déclarée terminée tant que le frontend n’est pas vérifié et que l’utilisateur ne l’a pas validée.
+
+
+### Note de dépôt — 2026-11-20 (02:00 UTC)
+
+`flutter pub get` a créé `pubspec.lock` à la racine. Il reste non suivi, comme `pubspec.yaml` et `lib/`; ne le commiter qu’après décision du répertoire Flutter canonique et inclusion coordonnée de ses sources.
