@@ -6,6 +6,7 @@ Tout ce qui sort d'ici a le statut « extracted » et doit être relu par l'admi
 
 import io
 import re
+import unicodedata
 import subprocess
 import tempfile
 from collections.abc import Iterator
@@ -469,11 +470,13 @@ def crop_png(png: bytes, box: tuple[float, float, float, float], margin: float =
 
     with Image.open(io.BytesIO(png)) as image:
         w, h = image.size
-        left, top, right, bottom = box
+        left, right = sorted((box[0], box[2]))  # boîte parfois inversée par l'OCR
+        top, bottom = sorted((box[1], box[3]))
         area = (
             int(max(0, left - margin) * w), int(max(0, top - margin) * h),
             int(min(1, right + margin) * w), int(min(1, bottom + margin) * h),
         )
+        area = (area[0], area[1], max(area[2], area[0] + 1), max(area[3], area[1] + 1))
         buffer = io.BytesIO()
         image.crop(area).save(buffer, format="PNG", optimize=True)
         return buffer.getvalue()
@@ -532,16 +535,17 @@ def guess_title(text: str) -> str | None:
 _SERIE = r"(?:A[12]?|B|C|D|E|F\d?|G\d?)"
 _SERIES_LIST = rf"({_SERIE}(?:\s*(?:[,&/\-]|et)?\s*{_SERIE})*)(?![A-Za-z0-9])"  # « AB » = A et B
 SERIES_PATTERN = re.compile(
-    rf"(?:(?i:terminales?|tles?|1(?:ere|ère|re|ère)s?|premi[eè]res?|2nde?s?|secondes?|bac|s[ée]ries?))\s*{_SERIES_LIST}"
+    rf"(?:(?i:terminales?|tles?|1(?:ere|ère|re|ère)s?|premi[eè]res?|2(?:nde|nd(?!e))s?|secondes?|bac|s[ée]ries?))\s*{_SERIES_LIST}"
 )
 SERIES_GRADE = re.compile(
-    r"(?i:(terminales?|tles?)|(1(?:ere|ère|re)s?|premi[eè]res?)|(2nde?s?|secondes?))\s*" + _SERIES_LIST.replace("(", "(?:", 1)
+    r"(?i:(terminales?|tles?)|(1(?:ere|ère|re)s?|premi[eè]res?)|(2(?:nde|nd(?!e))s?|secondes?))\s*" + _SERIES_LIST.replace("(", "(?:", 1)
 )
 
 
 def identify_series(text: str, filename: str = "") -> list[str]:
     """Lettres de série citées (A, A1, C, D, E…), dans l'ordre d'apparition, sans doublon."""
     found: list[str] = []
+    filename = unicodedata.normalize("NFC", filename)  # macOS écrit « è » en deux caractères
     for sample in (filename.replace("_", " "), text[:6000]):
         for match in SERIES_PATTERN.finditer(sample):
             group = match.group(1)
@@ -552,7 +556,19 @@ def identify_series(text: str, filename: str = "") -> list[str]:
                     found.append(letter)
         if found:  # le nom de fichier prime ; sinon, l'en-tête du document
             break
+    if not found:  # usages ivoiriens dans les noms de fichiers : « 2nde S » = 2nde C, « SM » = C et E, « SE » = D
+        name = filename.replace("_", " ")
+        for pattern, letters in FILENAME_SERIES_CODES:
+            if pattern.search(name):
+                return list(letters)
     return found
+
+
+FILENAME_SERIES_CODES = [
+    (re.compile(r"(?i)\b(?:2nde?|seconde)\s*S\b"), ("C",)),
+    (re.compile(r"(?i)\b(?:t|tle|terminale|1(?:ere|ère|re))\s*SM\b"), ("C", "E")),
+    (re.compile(r"(?i)\b(?:t|tle|terminale|1(?:ere|ère|re))\s*SE\b"), ("D",)),
+]
 
 
 def identify(text: str, filename: str = "") -> dict:

@@ -16,10 +16,12 @@ from dataclasses import dataclass, field
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
-from app import extraction
+from collections import Counter
+
+from app import extraction, programmes
 from app.audit import record
 from app.importer import Referentials, norm
-from app.models import Document, Exercise, Grade
+from app.models import Document, Exercise, Grade, Subject
 from app.processing import run_extraction, segment_document
 
 STOPWORDS = {
@@ -74,7 +76,69 @@ def _identify(db: Session, document: Document) -> dict:
             applied["series"] = [t.name for t in tracks]
     if applied:
         record(db, None, "identify", "document", document.id, applied=applied, source="retraitement (contenu)")
+    inferred = infer_series(db, document)
+    if inferred:
+        applied["series"] = inferred
     return applied
+
+
+MIN_MENTIONS = 5
+
+
+def _mentions(text: str, grade_code: str) -> Counter:
+    """Nombre de fois où « Tle D », « 1ère C et D »… apparaît dans tout le document, pour son niveau."""
+    group = {"TLE": 1, "1RE": 2, "2NDE": 3}[grade_code]
+    counts: Counter = Counter()
+    for match in extraction.SERIES_GRADE.finditer(text):
+        if match.group(group) is None:
+            continue
+        for letter in re.findall(extraction._SERIE, match.group(0)[match.end(group) - match.start():]):
+            counts["A" if letter.startswith("A") else letter] += 1
+    return counts
+
+
+def infer_series(db: Session, document: Document) -> list[str] | None:
+    """Série d'un document de lycée qui n'en a pas (jamais devinée au hasard ; décision notée dans l'audit) :
+    0. nom du fichier (« 1ère AB », « Tle SE », « TSM », « 2nde S ») ;
+    1. mentions répétées du niveau et de la série dans le document (« Tle D » cité au moins 5 fois) ;
+    2. sinon croisement avec le programme officiel (leçons propres à chaque série, programme commun).
+    """
+    if document.tracks or document.grade_id is None:
+        return None
+    grade = db.get(Grade, document.grade_id)
+    allowed = programmes.SERIES_BY_GRADE.get(grade.code if grade else "")
+    if not allowed:
+        return None
+    text = "\n".join(page.text or "" for page in document.pages)
+    counts = {k: v for k, v in _mentions(text, grade.code).items() if k in allowed}
+    letters: list[str] = extraction.identify_series("", document.original_filename or "")
+    method, details = "nom du fichier", {}
+    if letters:
+        pass
+    elif counts and max(counts.values()) >= MIN_MENTIONS:
+        top = max(counts.values())
+        letters = sorted(k for k, v in counts.items() if v >= max(MIN_MENTIONS, 0.3 * top))
+        method, details = "mentions dans le document", counts
+    else:
+        subject = db.get(Subject, document.subject_id) if document.subject_id else None
+        found = programmes.match_series(subject.name if subject else None, grade.code, text)
+        if found:
+            letters, method, details = [s for s in found.series if s in allowed], found.method, found.scores
+    if not letters:
+        return None
+    subject = db.get(Subject, document.subject_id) if document.subject_id else None
+    if "C" in letters and "E" in allowed and "E" not in letters and \
+            programmes.subject_key(subject.name if subject else None) in programmes.E_FOLLOWS_C:
+        letters = [*letters, "E"]  # en maths et physique-chimie, la série E suit le programme de la série C
+    refs = Referentials(db, create=True)
+    tracks = [t for t in (refs.track(grade, letter) for letter in letters) if t]
+    if not tracks:
+        return None
+    document.tracks = tracks
+    names = [t.name for t in tracks]
+    record(db, None, "identify", "document", document.id, applied={"series": names}, method=method,
+           details=details, source="séries déduites du contenu")
+    return names
 
 
 def _segments(document: Document, all_corrections: bool | None = None) -> list[extraction.Segment]:

@@ -103,11 +103,15 @@ def publish_command() -> None:
     from app.flashcards import create_proposals
     from app.models import Document
     from app.publication import publish_all
+    from app.reprocess import infer_series
 
     factory = sessionmaker(bind=get_engine(), autoflush=False, expire_on_commit=False)
     with factory() as db:
         cards = 0
         for document in db.scalars(select(Document).where(Document.status == "extracted")):
+            series = infer_series(db, document)
+            if series:
+                print(f"[{document.id}] {document.title} : séries {', '.join(series)}")
             cards += create_proposals(db, document)[1]
             db.commit()
         print(f"{cards} carte(s) mémoire ajoutée(s) depuis les documents.")
