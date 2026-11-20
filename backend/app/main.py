@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.routers import admin, auth
+from app.routers import admin, auth, catalog
 
 
 def create_app() -> FastAPI:
@@ -17,6 +17,7 @@ def create_app() -> FastAPI:
             allow_headers=["Authorization", "Content-Type"],
         )
     application.include_router(auth.router, prefix="/api/v1")
+    application.include_router(catalog.router, prefix="/api/v1")
     application.include_router(admin.router, prefix="/api/v1")
 
     @application.get("/health", tags=["santé"])

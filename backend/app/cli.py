@@ -27,14 +27,34 @@ def create_admin(email_input: str) -> None:
     print(f"Administrateur créé : {email}")
 
 
+def set_password(email_input: str) -> None:
+    email = email_input.strip().lower()
+    factory = sessionmaker(bind=get_engine(), autoflush=False, expire_on_commit=False)
+    with factory() as db:
+        user = db.scalar(select(User).where(User.email == email))
+        if user is None:
+            raise SystemExit("Aucun compte avec cette adresse e-mail.")
+        password = getpass("Nouveau mot de passe (12 caractères minimum) : ")
+        confirmation = getpass("Confirmez le mot de passe : ")
+        if len(password) < 12 or password != confirmation:
+            raise SystemExit("Mot de passe trop court ou confirmation différente.")
+        user.password_hash = hash_password(password)
+        db.commit()
+    print(f"Mot de passe modifié pour : {email}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Commandes d’administration locale de l’API")
     commands = parser.add_subparsers(dest="command", required=True)
     admin = commands.add_parser("create-admin", help="Créer le premier compte administrateur")
     admin.add_argument("--email", required=True)
+    reset = commands.add_parser("set-password", help="Changer le mot de passe d’un compte (saisie masquée)")
+    reset.add_argument("--email", required=True)
     args = parser.parse_args()
     if args.command == "create-admin":
         create_admin(args.email)
+    elif args.command == "set-password":
+        set_password(args.email)
 
 
 if __name__ == "__main__":

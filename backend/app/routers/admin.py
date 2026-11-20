@@ -1,14 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import UTC, datetime
+from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import require_admin
-from app.models import Chapter, ClassGroup, EducationalCycle, Grade, Subject
+from app.models import Chapter, ClassGroup, EducationalCycle, Grade, StudentProfile, Subject, Track, User
 from app.schemas import (
     ChapterCreate, ChapterRead, ClassCreate, ClassRead, CycleCreate, CycleRead,
-    GradeCreate, GradeRead, SubjectCreate, SubjectRead,
+    EnrollmentDecision, EnrollmentRead, GradeCreate, GradeRead, SubjectCreate, SubjectRead,
+    TrackCreate, TrackRead,
 )
 
 router = APIRouter(prefix="/admin", tags=["administration"], dependencies=[Depends(require_admin)])
@@ -47,6 +51,18 @@ def create_grade(payload: GradeCreate, db: Session = Depends(get_db)):
     return _save(db, Grade(**payload.model_dump()))
 
 
+@router.get("/tracks", response_model=list[TrackRead])
+def list_tracks(db: Session = Depends(get_db)):
+    return list(db.scalars(select(Track).order_by(Track.grade_id, Track.sort_order, Track.name)))
+
+
+@router.post("/tracks", response_model=TrackRead, status_code=status.HTTP_201_CREATED)
+def create_track(payload: TrackCreate, db: Session = Depends(get_db)):
+    if db.get(Grade, payload.grade_id) is None:
+        raise HTTPException(status_code=404, detail="Niveau introuvable")
+    return _save(db, Track(**payload.model_dump()))
+
+
 @router.get("/classes", response_model=list[ClassRead])
 def list_classes(db: Session = Depends(get_db)):
     return list(db.scalars(select(ClassGroup).order_by(ClassGroup.academic_year, ClassGroup.name)))
@@ -81,3 +97,35 @@ def create_chapter(payload: ChapterCreate, db: Session = Depends(get_db)):
     if db.get(Subject, payload.subject_id) is None:
         raise HTTPException(status_code=404, detail="Matière introuvable")
     return _save(db, Chapter(**payload.model_dump()))
+
+
+@router.get("/enrollments", response_model=list[EnrollmentRead])
+def list_enrollments(
+    enrollment_status: Literal["pending", "approved", "rejected"] | None = Query(default=None, alias="status"),
+    db: Session = Depends(get_db),
+):
+    query = select(StudentProfile).where(StudentProfile.enrollment_status != "none")
+    if enrollment_status is not None:
+        query = query.where(StudentProfile.enrollment_status == enrollment_status)
+    return list(db.scalars(query.order_by(StudentProfile.enrollment_requested_at, StudentProfile.user_id)))
+
+
+@router.post("/enrollments/{user_id}/decision", response_model=EnrollmentRead)
+def decide_enrollment(
+    user_id: int,
+    payload: EnrollmentDecision,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Valide ou refuse l'affectation demandée par l'élève (cahier §13)."""
+    profile = db.get(StudentProfile, user_id)
+    if profile is None or profile.enrollment_status == "none":
+        raise HTTPException(status_code=404, detail="Demande de parcours introuvable")
+    if profile.enrollment_status != "pending":
+        raise HTTPException(status_code=409, detail="Cette demande a déjà été traitée")
+    profile.enrollment_status = "approved" if payload.decision == "approve" else "rejected"
+    profile.enrollment_reviewed_at = datetime.now(UTC)
+    profile.enrollment_reviewed_by = admin.id
+    db.commit()
+    db.refresh(profile)
+    return profile

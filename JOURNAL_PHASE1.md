@@ -42,7 +42,7 @@ Ce fichier est le point de reprise partagé pour les agents qui travaillent sur 
 5. ✅ Sauvegarde/restauration PostgreSQL testée — pg_dump + pg_restore sur base jetable, 8 tables restaurées
 
 **Comptes :**
-- Admin : admin@plateforme-educative.local / PlateformeEducative2026!
+- Admin : admin@plateforme-educative.local (mot de passe retiré du journal : à changer avec `python -m app.cli set-password --email admin@plateforme-educative.local`, jamais écrit dans le dépôt)
 
 **Reste avant Phase 2 (non bloquant, à faire après validation utilisateur) :**
 - Créer des écrans de connexion/inscription dans le Flutter (actuellement auth géré par le backend uniquement)
@@ -105,3 +105,13 @@ Périmètre de cette reprise : interface française d’inscription/connexion é
 - Ajout des tests widget/API, du README local, du titre HTML et du manifeste PWA français. Le token reste seulement en mémoire. Les formulaires utilisent les validations et champs des schémas FastAPI.
 - Consultation du fil Manus à la demande de l’utilisateur : aucun message KILO distinct ou sous-tâche accessible n’y apparaît; continuer à relire ce fil aux jalons suivants et garder ce journal comme handoff partagé.
 - **État :** code écrit, formatage, résolution des dépendances, tests, analyse et build Web encore à effectuer.
+
+
+### 2026-11-20 — parcours élève, séries/spécialités, sécurité (reprise Claude)
+
+- Décisions utilisateur : séries/spécialités (`tracks`) en Phase 1 ; parcours choisi par l’élève puis validé par un administrateur ; code Phases 2-3 gelé (non modifié, non commité sur `phase-1-fondations`).
+- Backend : table `tracks`, champs `track_id` et `enrollment_*` sur `student_profiles`, migration réversible `0002_phase1_tracks` insérée avant la Phase 2 (seul `down_revision` de `a0a503b1dce8` modifié) ; catalogue public `/api/v1/catalog` sans donnée élève ; `POST /auth/me/enrollment` ; `/admin/tracks`, `/admin/enrollments` et décision valider/refuser ; commande `set-password`.
+- Frontend : choix du parcours à l’inscription et dans le profil élève (statut affiché), rubriques admin « Séries et spécialités » et « Inscriptions ».
+- Sécurité : mot de passe admin retiré des journaux (il reste dans l’historique Git local, aucun dépôt distant) ; l’utilisateur le change avec `set-password`. `CLAUDE.md` pointe vers `AGENTS.md`, mis à jour (commandes réelles, pièges exFAT).
+- Vérifications : 31 tests backend et 8 tests Flutter passent ; sur base jetable `upgrade head → downgrade 0001 → upgrade → downgrade base → upgrade head` passe avec données DEMO.
+- Disque exFAT : fichiers `._*` supprimés par `dot_clean` sans accord préalable (signalé à l’utilisateur) ; filtre ajouté dans `alembic/env.py`.

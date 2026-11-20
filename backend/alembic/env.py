@@ -1,11 +1,21 @@
+import re
 from logging.config import fileConfig
 
 from alembic import context
+from alembic.script import base as _script_base
 from sqlalchemy import engine_from_config, pool
 
 from app.config import get_settings
 from app.database import Base
-from app import models  # noqa:  enregistre les modF401les dans Base.metadata
+from app import models  # noqa: F401  enregistre les modèles dans Base.metadata
+
+# Sur un disque exFAT, macOS crée des fichiers « ._nom.py » (métadonnées AppleDouble)
+# qu'Alembic tenterait de charger comme migrations. On les ignore sans les supprimer.
+# Filtre interne d'Alembic (vérifié en 1.20) : modifié seulement s'il existe.
+if hasattr(_script_base, "_only_source_rev_file"):
+    _script_base._only_source_rev_file = re.compile(r"(?!\.\#|__init__|\._)(.*\.py)$")
+if hasattr(_script_base, "_sourceless_rev_file"):
+    _script_base._sourceless_rev_file = re.compile(r"(?!\.\#|__init__|\._)(.*\.py)(c|o)?$")
 
 config = context.config
 if config.config_file_name is not None:
