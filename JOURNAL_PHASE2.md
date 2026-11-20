@@ -87,3 +87,11 @@ Ce fichier documente le travail Phase 2 : import de documents, extraction d'exer
 - Base de développement : sauvegarde `.work/sauvegardes/…_avant_series.dump`, migration `b7c1d2e3f4a5` appliquée,
   import du dossier relancé avec le nouveau code.
 - Vérifications : 25 tests backend, `flutter analyze` sans erreur, rendu vérifié sur le serveur local.
+
+## 2026-11-20 — Étape : commande « retraiter » (toute la bibliothèque, jusqu'à la dernière page)
+
+- `python -m app.cli retraiter [numéros…]` : ré-extraction des documents en échec, incomplets ou à couche texte
+  illisible ; niveau et séries détectés ; nouveau découpage (validés/publiés intouchés) ; classement « corrigé »
+  des documents sans énoncé ; association livre de corrigés ↔ cahier d'exercices (même matière, même niveau, séries
+  compatibles, titres proches et numéros concordants). Rapports CSV dans `backend/data/rapports/`.
+- Vérifications : 26 tests backend.

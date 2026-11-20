@@ -307,3 +307,34 @@ def test_series_are_never_mixed(client: TestClient, admin: dict):
                          headers=admin)
     assert manual.status_code == 201, manual.text
     assert sorted(manual.json()["track_ids"]) == sorted([tracks["TLE-A"], tracks["TLE-C"]])
+
+
+def test_reprocess_detects_series_corrige_books_and_pairs_them(client: TestClient, admin: dict, tmp_path_factory):
+    from app.database import get_session_factory
+    from app.main import app
+    from app.models import Document, Exercise
+    from app.reprocess import reprocess
+
+    grade = client.post("/api/v1/admin/grades", json={"code": "TLE", "name": "Terminale"}, headers=admin).json()
+    subject = client.post("/api/v1/admin/subjects", json={"code": "MATHS", "name": "Maths DEMO"}, headers=admin).json()
+    cls = {"grade_id": str(grade["id"]), "subject_id": str(subject["id"])}
+    book = _upload(client, admin, "Cahier DEMO Tle C.txt", (
+        "Cahier DEMO — Terminale C\n\nExercice 1\nÉtudier la suite DEMO u(n+1) = 2u(n) + 1.\n\n"
+        "Exercice 2\nCalculer la limite DEMO de (2x+1)/(x-3) en 3.\n").encode(), **cls)
+    answers = _upload(client, admin, "Corrigé Cahier DEMO Tle C.txt", (
+        "Corrigé DEMO — Terminale C\n\nExercice 1\nLa suite DEMO est arithmético-géométrique.\n\n"
+        "Exercice 2\nLa limite DEMO vaut plus l'infini à droite.\n").encode(), **cls)
+    for document in (book, answers):
+        _extract(client, admin, document["id"])
+
+    factory = app.dependency_overrides[get_session_factory]()
+    report = reprocess(factory, log=lambda *_: None)
+    rows = {row["id"]: row for row in report.rows}
+    assert rows[book["id"]]["series"] == "Terminale C" and rows[book["id"]]["exercises"] == 2
+    assert rows[answers["id"]]["kind"] == "corrige" and rows[answers["id"]]["exercises"] == 0
+    assert report.pairs[0]["result"] == "associé" and report.pairs[0]["linked"] == 2
+    with factory() as db:
+        exercises = db.query(Exercise).filter(Exercise.document_id == book["id"]).all()
+        assert all(e.correction and e.correction.source_document_id == answers["id"] for e in exercises)
+        assert all([t.code for t in e.tracks] == ["TLE-C"] for e in exercises)
+        assert db.get(Document, answers["id"]).kind == "corrige"

@@ -71,6 +71,33 @@ def import_folder_command(args: argparse.Namespace) -> None:
     print(f"{len(report.imported)} importé(s), {len(report.skipped)} ignoré(s). Rapport : {target}")
 
 
+def reprocess_command(args: argparse.Namespace) -> None:
+    import csv
+    from datetime import datetime
+
+    from app.reprocess import reprocess
+    from app.storage import storage_root
+
+    factory = sessionmaker(bind=get_engine(), autoflush=False, expire_on_commit=False)
+    report = reprocess(factory, document_ids=args.ids or None, pair=not args.no_pairing)
+    folder = storage_root() / "rapports"
+    folder.mkdir(parents=True, exist_ok=True)
+    stamp = f"{datetime.now():%Y%m%d_%H%M%S}"
+    columns = ["id", "title", "file", "status", "pages", "reextract", "grade", "series", "kind", "exercises",
+               "corrections", "error"]
+    with (folder / f"retraitement_{stamp}.csv").open("w", newline="", encoding="utf-8") as out:
+        writer = csv.DictWriter(out, fieldnames=columns, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(report.rows)
+    with (folder / f"appariement_corriges_{stamp}.csv").open("w", newline="", encoding="utf-8") as out:
+        writer = csv.DictWriter(out, fieldnames=["corrige_id", "corrige", "exercise_id", "exercises", "common_words",
+                                                 "matching_numbers", "linked", "result"], extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(report.pairs)
+    total = sum(row.get("exercises") or 0 for row in report.rows)
+    print(f"{len(report.rows)} document(s) retraité(s), {total} exercice(s). Rapports : {folder}/*_{stamp}.csv")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Commandes d’administration locale de l’API")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -85,6 +112,9 @@ def main() -> None:
     folder.add_argument("--extract", action="store_true", help="Extraire le texte (OCR si besoin)")
     folder.add_argument("--segment", action="store_true", help="Extraire puis découper en exercices")
     folder.add_argument("--dry-run", action="store_true", help="Simuler sans rien écrire")
+    again = commands.add_parser("retraiter", help="Retraiter toute la bibliothèque jusqu'à la dernière page")
+    again.add_argument("ids", nargs="*", type=int, help="Numéros de documents (par défaut : tous)")
+    again.add_argument("--no-pairing", action="store_true", help="Ne pas associer les livres de corrigés")
     args = parser.parse_args()
     if args.command == "create-admin":
         create_admin(args.email)
@@ -92,6 +122,8 @@ def main() -> None:
         set_password(args.email)
     elif args.command == "import-folder":
         import_folder_command(args)
+    elif args.command == "retraiter":
+        reprocess_command(args)
 
 
 if __name__ == "__main__":
