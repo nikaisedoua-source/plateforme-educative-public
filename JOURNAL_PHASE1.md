@@ -75,3 +75,10 @@ Ce fichier est le point de reprise partagé pour les agents qui travaillent sur 
 ### Note de dépôt — 2026-11-20 (02:00 UTC)
 
 `flutter pub get` a créé `pubspec.lock` à la racine. Il reste non suivi, comme `pubspec.yaml` et `lib/`; ne le commiter qu’après décision du répertoire Flutter canonique et inclusion coordonnée de ses sources.
+
+
+### Reprise demandée — finalisation Phase 1 (2026-11-20, 02:03 UTC)
+
+L’utilisateur a demandé de terminer le travail. Les prototypes existants (`lib/`, `plateforme_educative_flutter/` et `plateforme_educative_flutter-1/`) sont des démonstrations avec données DEMO; leurs README confirment qu’ils n’ont ni comptes, ni espace admin, ni tests. Conformément à `AGENTS.md`, le frontend canonique sera créé séparément dans `frontend/` (Flutter Web) sans déplacer, copier ou écraser ces fichiers. Le choix Flutter Web + FastAPI + PostgreSQL local déjà donné par l’utilisateur implique un développement local sans services Webdev/managés.
+
+Périmètre de cette reprise : interface française d’inscription/connexion élève, session/token vers `/api/v1/auth`, accueil élève sans contenu scolaire fictif, espace admin protégé par le rôle serveur, formulaires/listes de cycles, niveaux, classes, matières et chapitres, tests Flutter, build Web et vérification finale des endpoints/migrations. La Phase 2 reste interdite sans validation explicite de l’utilisateur.
