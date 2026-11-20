@@ -8,6 +8,9 @@ Pour chaque exercice publié :
 Un exercice qui échoue est retiré de la publication (jamais supprimé) ; la raison est notée dans le journal.
 Un exercice déjà travaillé par un élève reste publié et est seulement signalé dans le rapport.
 
+Chaque réécriture acceptée est revérifiée (`rewrite.coverage_problems`) : tout le document recopié, chaque
+nombre retrouvé, aucune formule hors LaTeX ; sinon elle passe « douteuse » et l'élève voit la capture.
+
 Pour chaque carte mémoire publiée : question qui nomme la notion (jamais « p. 73 qui commence par … »), réponse
 lisible, classement et séries comme pour les exercices. Une carte qui échoue est retirée de la publication.
 
@@ -74,6 +77,17 @@ def verify(db: Session, *, apply: bool = True, log=print) -> VerificationReport:
     cache: dict = {}
     seen: dict[tuple, int] = {}
     answered = set(db.scalars(select(ExerciseAttempt.exercise_id).distinct()))
+    from app.rewrite import coverage_problems
+
+    for exercise in db.scalars(select(Exercise).where(Exercise.rewrite_status == "ok")):
+        doubts = coverage_problems(exercise.original_text or exercise.statement or "", exercise.statement_latex or "",
+                                   [q.text for q in exercise.questions])
+        if doubts:
+            report.totals["réécritures douteuses : capture du document affichée"] += 1
+            if apply:
+                exercise.rewrite_status = "doubtful"
+                record(db, None, "verify", "exercise", exercise.id, problems=doubts,
+                       decision="réécriture douteuse : l'élève voit la capture du document")
     published = db.scalars(select(Exercise).where(Exercise.is_published.is_(True)).order_by(Exercise.id))
     for exercise in published:
         problem = exercise_problem(db, exercise, cache)

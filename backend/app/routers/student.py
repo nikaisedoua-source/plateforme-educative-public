@@ -186,7 +186,9 @@ def my_exercise(exercise_id: int, db: Session = Depends(get_db), user: User = De
             "checkable": q.kind == "result" and bool(q.expected_answer),
             "last_result": last[q.id].result if q.id in last else None,
             "last_answer": last[q.id].answer_latex if q.id in last else None,
-        } for q in (exercise.questions if rewritten else [])],
+        # Questions de la réécriture seulement si elle est sûre : une réécriture douteuse pourrait différer
+        # du document (l'élève lit alors la capture et répond dans le cadre général).
+        } for q in (exercise.questions if exercise.rewrite_status == "ok" else [])],
         "options": [{"id": o.id, "label": o.label, "text": o.text} for o in exercise.options],
         # Une capture de page entière montrerait aussi les exercices voisins : quand la zone recadrée de
         # l'exercice est disponible (original.png), elle la remplace.

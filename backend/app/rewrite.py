@@ -20,6 +20,7 @@ import io
 import json
 import re
 import unicodedata
+from collections import Counter
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -303,6 +304,33 @@ def fidelity_problems(raw: str, rewritten: str) -> list[str]:
     return problems
 
 
+COVERAGE_STOP = {"dans", "pour", "avec", "sont", "cette", "leur", "leurs", "elle", "elles", "nous", "vous", "dont",
+                 "entre", "alors"}
+LOOSE_MATH = re.compile(r"[\^_]|\\[a-zA-Z]+|√|\b\d+\s*/\s*\d+\b")
+
+
+def coverage_problems(raw: str, statement: str, questions: list[str]) -> list[str]:
+    """Tout le document est-il recopié ? (retour utilisateur 2026-11-20 : un énoncé réduit à « Exercice 1 : »
+    passait les contrôles). Au moindre doute, l'élève voit la capture du document au lieu de la réécriture."""
+    problems: list[str] = []
+    full = "\n".join([statement, *questions])
+    def words(text: str) -> set[str]:
+        return {w for w in re.findall(r"[a-z]{4,}", _fold(text)) if w not in COVERAGE_STOP}
+    raw_words = words(raw)
+    if raw_words:
+        share = len(raw_words & words(MATH.sub(lambda m: f" {m.group(0)} ", full))) / len(raw_words)
+        if share < 0.85:
+            problems.append(f"énoncé incomplet : {share:.0%} des mots du document recopiés")
+    raw_numbers = Counter(re.findall(r"\d+", unicodedata.normalize("NFKC", raw)))
+    numbers = Counter(re.findall(r"\d+", unicodedata.normalize("NFKC", full)))
+    missing = sum(max(0, count - numbers[n]) for n, count in raw_numbers.items())
+    if missing:
+        problems.append(f"{missing} nombre(s) du document absent(s) de la réécriture")
+    if any(LOOSE_MATH.search(MATH.sub(" ", text)) for text in (statement, *questions)):
+        problems.append("formule écrite hors LaTeX")
+    return problems
+
+
 def answer_supported(answer: str, correction_text: str, raw: str) -> bool:
     """Le résultat attendu doit être lisible et figurer dans le corrigé (nombres présents dans l'original)."""
     if not answer.strip() or len(answer) > 120:
@@ -351,6 +379,7 @@ def rewrite_exercise(db: Session, exercise: Exercise, cache: _PageCache | None =
             statement, problems = rebuilt, []
     if image is None:
         problems.append("pas d'image du document : réécriture d'après le texte seul")
+    problems += coverage_problems(raw, statement, [str(q["texte"]) for q in questions[:MAX_QUESTIONS]])
     exercise.statement_latex = statement
     exercise.rewrite_status = "doubtful" if problems else "ok"
     exercise.rewrite_model = settings.ollama_vision_model

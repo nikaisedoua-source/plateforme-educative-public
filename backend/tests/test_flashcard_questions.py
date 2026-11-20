@@ -66,3 +66,17 @@ def test_definition_question_reads_naturally(monkeypatch):
 ])
 def test_question_grammar(nature, notion, expected):
     assert flashcard_questions._question(nature, notion) == expected
+
+
+def test_rewrite_must_cover_the_whole_document():
+    """Retour utilisateur : un énoncé réécrit réduit à « Exercice 1 : » était affiché comme sûr."""
+    from app.rewrite import coverage_problems
+
+    raw = ("Exercice 1 :\nOn se place dans un repère (O ; i , j ).\nSoient les points A(- 7\n2 ; 2), B(-2 ; 5).\n"
+           "1. Déterminer les coordonnées des vecteurs AB et CD.")
+    dropped = coverage_problems(raw, "Exercice 1 :", ["Déterminer les coordonnées des vecteurs $\\vec{AB}$ et $\\vec{CD}$."])
+    assert any("incomplet" in p for p in dropped) and any("nombre" in p for p in dropped)
+    full = ("Exercice 1 :\nOn se place dans un repère $(O ; \\vec{i}, \\vec{j})$.\n"
+            "Soient les points $A(-\\frac{7}{2} ; 2)$, $B(-2 ; 5)$.")
+    assert coverage_problems(raw, full, ["1. Déterminer les coordonnées des vecteurs $\\vec{AB}$ et $\\vec{CD}$."]) == []
+    assert "formule écrite hors LaTeX" in coverage_problems("P(x) = x4 + 1", "P(x) = x^4 + 1", [])
