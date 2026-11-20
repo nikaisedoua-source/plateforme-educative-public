@@ -573,6 +573,7 @@ FILENAME_SERIES_CODES = [
 
 def identify(text: str, filename: str = "") -> dict:
     """Propositions (jamais imposées) tirées du nom de fichier et des premières pages."""
+    filename = unicodedata.normalize("NFC", filename).replace("_", " ")  # « habilete_1ere » : le « _ » colle les mots
     sample = f"{filename}\n{text[:6000]}"
     return {
         "title": guess_title(text),

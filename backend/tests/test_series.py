@@ -28,3 +28,10 @@ def test_crop_accepts_inverted_box():
     buffer = io.BytesIO()
     Image.new("RGB", (100, 100)).save(buffer, "PNG")
     assert crop_png(buffer.getvalue(), (0.8, 0.2, 0.3, 0.1))
+
+
+def test_grade_read_when_glued_by_underscore():
+    from app.extraction import identify
+
+    result = identify("", "vallesse habilete_1ere C&D.pdf")
+    assert result["grade"] == "1ère" and result["series"] == ["C", "D"]
