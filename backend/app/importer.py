@@ -16,7 +16,7 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
-from app import extraction, storage
+from app import extraction, programmes, storage
 from app.audit import record
 from app.models import Document, Grade, Subject, Track
 from app.processing import run_extraction, segment_document
@@ -74,6 +74,9 @@ class Referentials:
     def track(self, grade: Grade | None, letter: str) -> Track | None:
         """Série d'un niveau (ex. Tle C) ; créée si besoin, uniquement pour 2nde, 1ère et Terminale."""
         if grade is None or grade.code not in SERIES_GRADES:
+            return None
+        # seules les séries du programme ivoirien (2nde A/C ; 1ère et Tle A/C/D/E) : « 2nde G… » n'en est pas une
+        if letter[:1] not in programmes.SERIES_BY_GRADE.get(grade.code, []):
             return None
         code = f"{grade.code}-{letter}"
         track = self.db.scalar(select(Track).where(Track.code == code))

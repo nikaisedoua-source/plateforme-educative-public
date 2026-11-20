@@ -35,3 +35,27 @@ def test_grade_read_when_glued_by_underscore():
 
     result = identify("", "vallesse habilete_1ere C&D.pdf")
     assert result["grade"] == "1ère" and result["series"] == ["C", "D"]
+
+
+def test_importer_never_creates_series_outside_the_programme():
+    """« 2nde G… » (début d'un mot) n'est pas une série : la 2nde n'a que A et C."""
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session
+
+    from app.database import Base
+    from app.importer import Referentials
+    from app.models import Grade, Track
+
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    with Session(engine) as db:
+        seconde = Grade(code="2NDE", name="2nde", sort_order=10)
+        terminale = Grade(code="TLE", name="Tle", sort_order=12)
+        db.add_all([seconde, terminale])
+        db.flush()
+        refs = Referentials(db, create=True)
+        assert refs.track(seconde, "G") is None
+        assert refs.track(seconde, "D") is None
+        assert refs.track(seconde, "C").code == "2NDE-C"
+        assert refs.track(terminale, "A1").code == "TLE-A1"
+        assert {t.code for t in db.query(Track)} == {"2NDE-C", "TLE-A1"}
