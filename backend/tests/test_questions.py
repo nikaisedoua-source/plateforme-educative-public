@@ -31,6 +31,8 @@ from test_student import _student, isolated_storage, world  # noqa: F401
     (r"\sqrt[3]{8}", "2", True),
     ("3,14", r"\pi", False),
     ("abc", r"\frac{1}{2}", False),
+    ("2{,}5", r"\frac{5}{2}", True),  # virgule décimale écrite par MathLive
+    (r"\left\lbrace1{,}5;2\right\rbrace", r"\{2 ; 1,5\}", True),
 ])
 def test_equivalent_writings_are_accepted(given, expected, verdict):
     assert equivalent(given, expected) is verdict
@@ -123,6 +125,8 @@ def test_student_answers_question_by_question(client: TestClient, world: dict):
     assert client.post(url.format(proof_id), json={"self_check": "self_ok"}, headers=student).status_code == 409
     correction = client.get(f"/api/v1/student/exercises/{world['numeric']}/correction", headers=student)
     assert correction.status_code == 200 and correction.json()["question_answers"] == {"1": "2,5"}
+    seen = client.get(f"/api/v1/student/exercises/{world['numeric']}", headers=student).json()
+    assert seen["correction_viewed"] is True and body["correction_viewed"] is False
     graded = client.post(url.format(proof_id), json={"self_check": "self_review"}, headers=student)
     assert graded.status_code == 201 and graded.json()["after_correction"] is True
 
@@ -149,3 +153,26 @@ def test_other_series_cannot_answer(client: TestClient, world: dict):
     refused = client.post(f"/api/v1/student/questions/{result_id}/attempts", json={"answer_latex": "2,5"},
                           headers=student_a)
     assert refused.status_code == 404
+
+
+@pytest.mark.parametrize("written, value", [(r"\frac{5}{2}", 2.5), ("2{,}5", 2.5), (r"\sqrt{4}", 2.0), ("x+1", None)])
+def test_numeric_cards_accept_math_keyboard(written, value):
+    from app.grading import parse_number
+    assert parse_number(written) == value
+
+
+def test_heading_needles_tolerate_spacing():
+    from app.processing import _needles
+
+    needles = _needles("EXERCICE 1\xa0: Calcule")
+    assert "EXERCICE 1 : Calcule" in needles
+    assert "EXERCICE 1" in needles
+
+
+@pytest.mark.parametrize("text", ["Calcule : 2 , 9  8 + 4  8, 5  7  1", "Calcule      la somme",
+                                  "EXERCICE 2 2 Thes 3-10 EB 24 25 ZONE 3 DGEM"])
+def test_fidelity_flags_copied_layout(text):
+    from app.rewrite import fidelity_problems
+
+    raw = "EXERCICE 1 : Calcule la somme\n2 , 9 8 + 4 8, 5 7 1 + 4 9 5\n2 Thes 3-10 EB 24 25 ZONE 3 DGEM"
+    assert fidelity_problems(raw, text)

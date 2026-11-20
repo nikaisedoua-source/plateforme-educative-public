@@ -47,7 +47,13 @@ Règles absolues :
   $\\overline{AB}$, $\\vec{u}$, $\\mathbb{R}$, $H_{2}O$.
 - Garde la numérotation d'origine (1., 2., a), b)...) et les retours à la ligne utiles.
 - Si une figure ou un tableau est dessiné, écris [figure] à sa place, sans le décrire.
-- Ignore les en-têtes, pieds de page et numéros de page.
+- Ignore les en-têtes, pieds de page, numéros de page, versets ou devises, et tout ce qui appartient
+  à un autre exercice.
+- Une opération posée en colonnes (addition, soustraction, multiplication, division) s'écrit sur une ligne
+  en LaTeX, sans la calculer : par exemple « $2{,}98 + 48{,}571 + 495$ » ou « $17{,}56 \\div 0{,}8$ ».
+  Les nombres décimaux s'écrivent avec une virgule : $48{,}571$. Pas de chiffres séparés par des espaces.
+- Les pointillés à compléter s'écrivent « ... ».
+- L'image fait foi ; le texte extrait plus bas sert seulement à vérifier l'orthographe des mots.
 Ensuite, liste les questions auxquelles l'élève doit répondre, dans l'ordre :
 - "numero" : la numérotation telle qu'elle est écrite ("1", "2.a", "b"...) ;
 - "texte" : le texte de la question recopié (LaTeX) ;
@@ -111,6 +117,18 @@ class RewriteUnavailable(RuntimeError):
 class _PageCache:
     path: Path
     positions: dict[tuple[int, str], float | None] = field(default_factory=dict)
+    marks: dict[int, list[float]] = field(default_factory=dict)
+    margins: dict[int, tuple[float, float]] = field(default_factory=dict)
+
+    def page_margins(self, page: int) -> tuple[float, float]:
+        if page not in self.margins:
+            from app.processing import page_margins
+
+            try:
+                self.margins[page] = page_margins(self.path, page)
+            except Exception:
+                self.margins[page] = (0.0, 1.0)
+        return self.margins[page]
 
     def position(self, page: int, heading: str) -> float | None:
         key = (page, heading)
@@ -122,6 +140,16 @@ class _PageCache:
             except Exception:
                 self.positions[key] = None
         return self.positions[key]
+
+    def heading_marks(self, page: int) -> list[float]:
+        if page not in self.marks:
+            from app.processing import heading_marks
+
+            try:
+                self.marks[page] = heading_marks(self.path, page)
+            except Exception:
+                self.marks[page] = []
+        return self.marks[page]
 
 
 def _first_line(text: str) -> str:
@@ -161,11 +189,20 @@ def region_image(document: Document, page_start: int, page_end: int, heading: st
     parts: list[bytes] = []
     for page in range(page_start, page_end + 1):
         png = extraction.render_pdf_page(path, page, dpi=150)
-        top = cache.position(page, heading) if page == page_start else 0.0
-        top = top or 0.0
+        header, footer = cache.page_margins(page)
+        top = cache.position(page, heading) if page == page_start else None
+        top = header if top is None else top
+        # Fin de zone : titre d'un autre bloc du document, ou tout début de bloc (« EXERCICE 3 », « PARTIE B »)
+        # repéré sur la page, sous le titre de l'exercice.
         following = [cache.position(page, title) for start, title in siblings if start == page and title != heading]
-        following = [pos for pos in following if pos is not None and pos > top + 0.01]
-        bottom = min(following) if following and page == page_end else 1.0
+        following += cache.heading_marks(page)
+        following = [pos for pos in following if pos is not None and pos > top + 0.02]
+        bottom = min(following) - 0.006 if following and page == page_end else 1.0
+        bottom = min(bottom, footer)
+        if page < page_end and following:  # l'exercice continue page suivante : rien après un autre titre
+            bottom = min(min(following) - 0.006, footer)
+            parts.append(extraction.crop_png(png, (0.0, max(0.0, top - 0.01), 1.0, bottom), margin=0.0))
+            break
         parts.append(extraction.crop_png(png, (0.0, max(0.0, top - 0.01), 1.0, bottom), margin=0.0))
     return _stack(parts)
 
@@ -174,7 +211,7 @@ def region_image(document: Document, page_start: int, page_end: int, heading: st
 # Modèle local
 # ---------------------------------------------------------------------------
 
-def ask_model(prompt: str, image: bytes | None, schema: dict) -> dict:
+def ask_model(prompt: str, image: bytes | None, schema: dict, retry: bool = True) -> dict:
     settings = get_settings()
     message = {"role": "user", "content": prompt}
     if image:
@@ -192,7 +229,9 @@ def ask_model(prompt: str, image: bytes | None, schema: dict) -> dict:
     try:
         return json.loads(content)
     except json.JSONDecodeError as error:
-        raise ValueError("réponse du modèle illisible") from error
+        if not retry:
+            raise ValueError("réponse du modèle illisible") from error
+        return ask_model(prompt, image, schema, retry=False)  # une seconde tentative
 
 
 # ---------------------------------------------------------------------------
@@ -239,6 +278,12 @@ def fidelity_problems(raw: str, rewritten: str) -> list[str]:
             problems.append(f"seulement {share:.0%} des nombres se retrouvent dans le document")
     if not checked:
         problems.append("texte du document trop court ou illisible pour vérifier")
+    spaced_digits = re.findall(r"(?<!\d)\d {1,3}(?=\d(?!\d))", MATH.sub(" ", rewritten))
+    if len(spaced_digits) >= 3 or re.search(r"\S {4,}\S", rewritten):
+        problems.append("mise en page recopiée (chiffres espacés ou colonnes)")
+    if re.search(r"(?i)\b(?:page \d+|DGEM|DREN|examen blanc)\b", _fold(rewritten)) and not re.search(
+            r"(?i)\b(?:page \d+|DGEM|DREN|examen blanc)\b", _fold(_first_line(raw))):
+        problems.append("en-tête ou pied de page recopié")
     plain = len(re.sub(r"\s+", "", MATH.sub("", rewritten)))
     if plain > 2 * len(re.sub(r"\s+", "", raw)) + 200:
         problems.append("réécriture beaucoup plus longue que l'original")
@@ -284,6 +329,13 @@ def rewrite_exercise(db: Session, exercise: Exercise, cache: _PageCache | None =
         exercise.rewrite_status = "failed"
         return "failed"
     problems = fidelity_problems(raw, statement)
+    if any(problem.startswith("mise en page") for problem in problems) and questions:
+        # Opérations posées recopiées en colonnes : l'énoncé est reconstitué avec la consigne d'origine
+        # et les questions déjà écrites en LaTeX par le modèle, puis revérifié.
+        rebuilt = "\n".join([_first_line(statement)] + [
+            f"{q.get('numero') or i + 1}. {str(q['texte']).strip()}" for i, q in enumerate(questions)])
+        if not fidelity_problems(raw, rebuilt):
+            statement, problems = rebuilt, []
     if image is None:
         problems.append("pas d'image du document : réécriture d'après le texte seul")
     exercise.statement_latex = statement

@@ -20,3 +20,23 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: Nunito
+      fonts:
+        - asset: fonts/Nunito_400Regular.ttf
+        - asset: fonts/Nunito_600SemiBold.ttf
+          weight: 600
+        - asset: fonts/Nunito_700Bold.ttf
+          weight: 700
+        - asset: fonts/Nunito_800ExtraBold.ttf
+          weight: 800
+        - asset: fonts/Nunito_900Black.ttf
+          weight: 900
+    - family: Baloo 2
+      fonts:
+        - asset: fonts/Baloo2_600SemiBold.ttf
+          weight: 600
+        - asset: fonts/Baloo2_700Bold.ttf
+          weight: 700
+        - asset: fonts/Baloo2_800ExtraBold.ttf
+          weight: 800

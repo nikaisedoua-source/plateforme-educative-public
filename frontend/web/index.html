@@ -13,6 +13,29 @@
   <link rel="icon" type="image/png" href="favicon.png">
   <title>Plateforme éducative</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    /* Polices du projet (licence OFL) pour les énoncés affichés en HTML/MathML. */
+    @font-face { font-family: "Nunito"; font-weight: 400; src: url("assets/fonts/Nunito_400Regular.ttf"); }
+    @font-face { font-family: "Nunito"; font-weight: 700; src: url("assets/fonts/Nunito_700Bold.ttf"); }
+    @font-face { font-family: "Nunito"; font-weight: 800; src: url("assets/fonts/Nunito_800ExtraBold.ttf"); }
+    body { background: #F5F7FF; }
+    @media (prefers-color-scheme: dark) { body { background: #151A2E; } }
+    math-field::part(menu-toggle) { display: none; }
+  </style>
+  <!-- MathLive (licence MIT), copié dans le projet : saisie des réponses mathématiques sans internet. -->
+  <script src="mathlive/mathlive.min.js"></script>
+  <script>
+    (function () {
+      var M = window.MathfieldElement || (window.MathLive && window.MathLive.MathfieldElement);
+      if (!M) return;
+      M.fontsDirectory = "mathlive/fonts/";
+      M.soundsDirectory = null;
+      M.keypressSound = null;
+      M.plonkSound = null;
+      M.locale = "fr";
+      M.decimalSeparator = ",";
+    })();
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

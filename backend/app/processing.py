@@ -1,5 +1,6 @@
 """Traitements documentaires : extraction en arrière-plan, découpage, captures des figures."""
 
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -41,6 +42,32 @@ def run_extraction(document_id: int, factory: sessionmaker, actor_id: int | None
         db.commit()
 
 
+HEADING_WORDS = ("exercice", "partie", "probleme", "situation", "activite", "evaluation")
+
+
+def _needles(heading: str) -> list[str]:
+    """Variantes de recherche d'un titre : texte d'origine, espaces normalisées, puis « EXERCICE 1 » seul."""
+    clean = re.sub(r"\s+", " ", heading.replace("\xa0", " ").replace("\u202f", " ")).strip()
+    needles = [heading.strip()[:30], clean[:30]]
+    label = re.match(r"(?i)\s*([A-Za-zÀ-ÿ]+\s*(?:n\s*°\s*)?(?:\d+|[IVX]+\b))", clean)
+    if label:
+        needles.append(label.group(1))
+    needles.append(clean[:12])
+    return [n for i, n in enumerate(needles) if n and n not in needles[:i]]
+
+
+def _find(textpage, needle: str, height: float) -> float | None:
+    searcher = textpage.search(needle, match_case=False)
+    while (found := searcher.get_next()):
+        index, count = found
+        after = textpage.get_text_range(index + count, 1) if index + count < textpage.count_chars() else ""
+        if needle[-1:].isdigit() and after[:1].isdigit():
+            continue  # « EXERCICE 1 » ne doit pas trouver « EXERCICE 12 »
+        _left, _bottom, _right, top = textpage.get_charbox(index)
+        return 1 - top / height
+    return None
+
+
 def _heading_positions(path: Path, page_number: int, headings: list[str]) -> list[float | None]:
     """Position verticale (fraction depuis le haut) de chaque titre d'exercice sur la page."""
     import pypdfium2 as pdfium
@@ -52,16 +79,83 @@ def _heading_positions(path: Path, page_number: int, headings: list[str]) -> lis
         textpage = page.get_textpage()
         positions: list[float | None] = []
         for heading in headings:
-            needle = heading.strip()[:30]
-            searcher = textpage.search(needle, match_case=False) if needle else None
-            found = searcher.get_next() if searcher else None
-            if found:
-                index, _count = found
-                _left, _bottom, _right, top = textpage.get_charbox(index)
-                positions.append(1 - top / height)
-            else:
-                positions.append(None)
+            position = None
+            for needle in _needles(heading):
+                position = _find(textpage, needle, height)
+                if position is not None:
+                    break
+            positions.append(position)
         return positions
+    finally:
+        pdf.close()
+
+
+def heading_marks(path: Path, page_number: int) -> list[float]:
+    """Positions de tous les débuts de bloc de la page (« EXERCICE », « PARTIE », « PROBLÈME »…),
+    en début de ligne : sert à arrêter la zone d'un exercice au titre suivant."""
+    import pypdfium2 as pdfium
+
+    pdf = pdfium.PdfDocument(str(path))
+    try:
+        page = pdf[page_number - 1]
+        height = page.get_height()
+        textpage = page.get_textpage()
+        marks: list[float] = []
+        for word in HEADING_WORDS + ("problème", "activité", "évaluation"):
+            searcher = textpage.search(word, match_case=False)
+            while (found := searcher.get_next()):
+                index, _count = found
+                before = textpage.get_text_range(max(0, index - 40), min(index, 40)) if index else ""
+                if re.split(r"[\r\n]", before)[-1].strip(" \t\xa0\u202f-–•*0123456789.)"):
+                    continue  # le mot est au milieu d'une phrase
+                _left, _bottom, _right, top = textpage.get_charbox(index)
+                marks.append(1 - top / height)
+        return sorted(set(round(m, 4) for m in marks))
+    finally:
+        pdf.close()
+
+
+def _band_lines(pdf, page_number: int, band: float) -> dict[str, float]:
+    """Lignes de texte situées dans le bas (band > 0) ou le haut (band < 0) de la page :
+    texte sans chiffres ni espaces → position du haut de la ligne (fraction depuis le haut)."""
+    if not 1 <= page_number <= len(pdf):
+        return {}
+    page = pdf[page_number - 1]
+    height = page.get_height()
+    textpage = page.get_textpage()
+    rows: dict[int, list[tuple[float, str]]] = {}
+    for index in range(textpage.count_chars()):
+        _left, bottom, _right, top = textpage.get_charbox(index)
+        y = 1 - top / height
+        if (band > 0 and y < 1 - band) or (band < 0 and y > -band):
+            continue
+        rows.setdefault(round(y * 200), []).append((y, textpage.get_text_range(index, 1)))
+    lines: dict[str, float] = {}
+    for chars in rows.values():
+        key = re.sub(r"[\W\d_]+", "", "".join(c for _, c in chars)).lower()
+        if len(key) >= 6:
+            lines[key] = min(lines.get(key, 1.0), min(y for y, _ in chars))
+    return lines
+
+
+def page_margins(path: Path, page_number: int) -> tuple[float, float]:
+    """(haut, bas) de la zone utile : en-têtes et pieds de page répétés sur une page voisine exclus."""
+    import pypdfium2 as pdfium
+
+    pdf = pdfium.PdfDocument(str(path))
+    try:
+        top, bottom = 0.0, 1.0
+        for band in (0.15, -0.12):
+            here = _band_lines(pdf, page_number, band)
+            others: set[str] = set()
+            for other in (page_number - 1, page_number + 1):
+                others |= set(_band_lines(pdf, other, band))
+            repeated = [y for key, y in here.items() if key in others]
+            if repeated and band > 0:
+                bottom = min(repeated) - 0.005
+            elif repeated:
+                top = max(repeated) + 0.025
+        return top, bottom
     finally:
         pdf.close()
 

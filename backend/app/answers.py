@@ -57,7 +57,7 @@ def _argument(text: str, start: int) -> tuple[str, int]:
 
 def latex_to_python(latex: str) -> str:
     """Traduit le LaTeX produit par le clavier mathématique en écriture lisible par sympy."""
-    text = latex.strip().strip("$").strip()
+    text = latex.strip().strip("$").strip().replace("{,}", ",")  # virgule décimale du clavier mathématique
     text = text.replace("\\left", "").replace("\\right", "").replace("\\,", " ").replace("\\!", "")
     text = text.replace("\\displaystyle", "").replace("\\dfrac", "\\frac").replace("\\tfrac", "\\frac")
     text = re.sub(r"\\operatorname\{(\w+)\}", r"\\\1", text)
@@ -150,7 +150,7 @@ INTERVAL = re.compile(r"^(?:S\s*=\s*)?(\]|\[)(.+?)[;,](.+?)(\]|\[)$")
 
 
 def _clean(value: str) -> str:
-    value = value.strip().strip("$").strip()
+    value = value.strip().strip("$").strip().replace("{,}", ",")
     value = value.replace("\\left", "").replace("\\right", "").replace("\\lbrace", "\\{").replace("\\rbrace", "\\}")
     value = value.replace("\\mathbb{R}", "R").replace("\\R", "R").replace("ℝ", "R")
     value = re.sub(r"\\(?:text|mathrm)\{([^}]*)\}", r"\1", value)

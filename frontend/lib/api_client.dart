@@ -373,6 +373,77 @@ class ApiClient {
   Future<Map<String, dynamic>> studentCorrection(int id) async =>
       _map(await _request('GET', '/api/v1/student/exercises/$id/correction', authenticated: true));
 
+  /// Réponse à une question : `answer` en LaTeX (question « résultat » ou rédaction), ou auto-évaluation
+  /// `selfCheck` (« self_ok » / « self_review ») après avoir lu la correction.
+  Future<Map<String, dynamic>> answerQuestion(int questionId, {String? answer, String? selfCheck}) async => _map(
+    await _request(
+      'POST',
+      '/api/v1/student/questions/$questionId/attempts',
+      body: {'answer_latex': ?answer, 'self_check': ?selfCheck},
+      authenticated: true,
+    ),
+  );
+
+  Future<Map<String, dynamic>> revisionsToday() async =>
+      _map(await _request('GET', '/api/v1/student/revisions/today', authenticated: true));
+
+  Future<List<Map<String, dynamic>>> revisionSession({int? subjectId, int? chapterId, int limit = 20}) async => _list(
+    await _request(
+      'GET',
+      '/api/v1/student/revisions/session${_query({'subject_id': subjectId, 'chapter_id': chapterId, 'limit': limit})}',
+      authenticated: true,
+    ),
+  );
+
+  Future<Map<String, dynamic>> flashcardAnswer(int id) async =>
+      _map(await _request('GET', '/api/v1/student/flashcards/$id/answer', authenticated: true));
+
+  Future<Map<String, dynamic>> reviewFlashcard(int id, {String? answerText, int? rating}) async => _map(
+    await _request(
+      'POST',
+      '/api/v1/student/flashcards/$id/review',
+      body: {'answer_text': ?answerText, 'rating': ?rating},
+      authenticated: true,
+    ),
+  );
+
+  Future<List<Map<String, dynamic>>> studentMethods() async =>
+      _list(await _request('GET', '/api/v1/student/methods', authenticated: true));
+
+  // ------------------------------------------------------------------ administration de la mémorisation
+
+  Future<List<Map<String, dynamic>>> listFlashcards({String? status, int? documentId, int offset = 0}) async => _list(
+    await _request(
+      'GET',
+      '/api/v1/memory/flashcards${_query({'status': status, 'document_id': documentId, 'offset': offset})}',
+      authenticated: true,
+    ),
+  );
+
+  Future<Map<String, dynamic>> updateFlashcard(int id, Map<String, Object?> values) async =>
+      _map(await _request('PATCH', '/api/v1/memory/flashcards/$id', body: values, authenticated: true));
+
+  Future<Map<String, dynamic>> flashcardAction(int id, String action) async => _map(
+    await _request('POST', '/api/v1/memory/flashcards/$id/action', body: {'action': action}, authenticated: true),
+  );
+
+  Future<List<Map<String, dynamic>>> listMethods() async =>
+      _list(await _request('GET', '/api/v1/memory/methods', authenticated: true));
+
+  Future<Map<String, dynamic>> updateMethod(int id, Map<String, Object?> values) async =>
+      _map(await _request('PATCH', '/api/v1/memory/methods/$id', body: values, authenticated: true));
+
+  Future<Map<String, dynamic>> methodAction(int id, String action) async => _map(
+    await _request('POST', '/api/v1/memory/methods/$id/action', body: {'action': action}, authenticated: true),
+  );
+
+  Future<Map<String, dynamic>> spacedSettings() async =>
+      _map(await _request('GET', '/api/v1/memory/settings/spaced-repetition', authenticated: true));
+
+  Future<Map<String, dynamic>> saveSpacedSettings(Map<String, Object?> values) async => _map(
+    await _request('PUT', '/api/v1/memory/settings/spaced-repetition', body: values, authenticated: true),
+  );
+
   /// Texte avec formules LaTeX → HTML sûr (texte échappé + MathML).
   Future<Map<String, dynamic>> renderMath(String text) async => _map(
     await _request('POST', '/api/v1/math/render', authenticated: true, body: {'text': text}),

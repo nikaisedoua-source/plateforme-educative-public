@@ -25,7 +25,18 @@ def parse_number(value: str) -> float | None:
             return float(fraction.group(1)) / denominator if denominator else None
         return float(text)
     except ValueError:
+        pass
+    # Écriture du clavier mathématique : \frac{5}{2}, 2{,}5, \sqrt{4}…
+    from app.answers import to_sympy  # import local : sympy n'est chargé qu'au besoin
+
+    expression = to_sympy(value)
+    if expression is None or expression.free_symbols:
         return None
+    try:
+        number = complex(expression.evalf())
+    except (TypeError, ValueError):
+        return None
+    return number.real if abs(number.imag) < 1e-12 else None
 
 
 def grade(exercise: Exercise, answer_text: str | None, option_ids: list[int] | None) -> tuple[str, float]:

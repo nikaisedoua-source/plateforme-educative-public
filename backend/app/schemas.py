@@ -454,6 +454,7 @@ class StudentExercise(StudentExerciseSummary):
     source: str
     correction_available: bool
     correction_rule: str
+    correction_viewed: bool = False  # la correction a été ouverte : auto-évaluation possible, réussite non comptée
     history: list[StudentAttemptHistory]
 
 

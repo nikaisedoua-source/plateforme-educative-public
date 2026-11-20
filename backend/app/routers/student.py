@@ -192,6 +192,8 @@ def my_exercise(exercise_id: int, db: Session = Depends(get_db), user: User = De
         "source": f"{document.title}, p. {exercise.page_start}"
                   + (f", exercice {exercise.source_number}" if exercise.source_number else ""),
         "correction_available": available, "correction_rule": rule,
+        "correction_viewed": db.scalar(select(CorrectionView.id).where(
+            CorrectionView.user_id == user.id, CorrectionView.exercise_id == exercise_id)) is not None,
         "history": [{"result": a.result, "score": a.score, "created_at": a.created_at,
                      "after_correction": a.after_correction} for a in attempts],
     }

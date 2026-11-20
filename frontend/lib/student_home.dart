@@ -2,7 +2,9 @@ import 'package:material_ui/material_ui.dart';
 
 import 'api_client.dart';
 import 'parcours_picker.dart';
+import 'sounds.dart';
 import 'student_exercises.dart';
+import 'student_memory.dart';
 import 'theme.dart';
 
 class StudentHomePage extends StatefulWidget {
@@ -212,6 +214,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
       appBar: AppBar(
         title: Text(_tabs[_tab]),
         actions: [
+          const SoundToggle(),
           PressButton(
             label: 'Déconnexion',
             primary: false,
@@ -221,6 +224,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
         ],
       ),
       body: PageFrame(
+        key: ValueKey('onglet-$_tab'),
         title: greeting,
         trailing: _tab == 0 ? const DemoTag() : null,
         children: [
@@ -234,42 +238,34 @@ class _StudentHomePageState extends State<StudentHomePage> {
           if (_tab == 7) ..._profil(),
         ],
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Palette.of(context).surface,
-          border: Border.all(color: Palette.of(context).border, width: 2),
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Palette.of(context).shadow,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: 70,
-            child: Row(
-              children: [
-                for (var i = 0; i < _tabs.length; i++)
-                  Expanded(
-                    child: PressButton(
-                      label: _tabs[i],
-                      primary: _tab == i,
-                      onPressed: () => setState(() => _tab = i),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _tab,
+        height: 68,
+        backgroundColor: Palette.of(context).surface,
+        indicatorColor: Brand.blue.withValues(alpha: .16),
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        onDestinationSelected: (i) {
+          Sounds.tap();
+          setState(() => _tab = i);
+        },
+        destinations: [
+          for (var i = 0; i < _tabs.length; i++)
+            NavigationDestination(icon: Icon(_icons[i]), label: _tabs[i]),
+        ],
       ),
     );
   }
+
+  static const List<IconData> _icons = [
+    Icons.home_rounded,
+    Icons.menu_book_rounded,
+    Icons.edit_note_rounded,
+    Icons.style_rounded,
+    Icons.psychology_rounded,
+    Icons.emoji_events_rounded,
+    Icons.insights_rounded,
+    Icons.person_rounded,
+  ];
 
   List<Widget> _accueil() {
     return [
@@ -306,9 +302,8 @@ class _StudentHomePageState extends State<StudentHomePage> {
           ],
         ),
       ),
-      const SizedBox(height: 16),
+      if (_approved) TodayRevisionCard(api: widget.api, onOpen: () => setState(() => _tab = 3)),
       _parcoursCard(),
-      const SizedBox(height: 16),
       const Text(
         'Ce contenu provient exclusivement des documents fournis et validés par l’administrateur. Aucun exercice n’est inventé.',
         style: TextStyle(fontSize: 13, color: Color(0xFF69758A)),
@@ -345,30 +340,18 @@ class _StudentHomePageState extends State<StudentHomePage> {
   }
 
   List<Widget> _flash() {
-    return [
-      const Text(
-        'Les cartes mémoire apparaîtront ici après leur création à partir des documents validés.',
-        style: TextStyle(color: Color(0xFF606B80)),
-      ),
-      const SizedBox(height: 16),
-      const Text(
-        'Aucune carte mémoire pour le moment.',
-        style: TextStyle(fontWeight: FontWeight.w800, color: Brand.muted),
-      ),
-    ];
+    if (!_approved) return _waitForApproval();
+    return [FlashView(api: widget.api)];
   }
 
   List<Widget> _memorisation() {
+    if (!_approved) return _waitForApproval();
     return [
       const Text(
-        'Les méthodes de mémorisation apparaîtront ici.',
-        style: TextStyle(color: Color(0xFF606B80)),
+        'Des méthodes simples pour retenir durablement : choisis-en une et essaie-la sur tes cartes flash.',
+        style: TextStyle(color: Brand.muted),
       ),
-      const SizedBox(height: 16),
-      const Text(
-        'Aucune méthode disponible pour le moment.',
-        style: TextStyle(fontWeight: FontWeight.w800, color: Brand.muted),
-      ),
+      MethodsView(api: widget.api),
     ];
   }
 

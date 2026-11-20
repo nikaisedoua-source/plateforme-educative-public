@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:web/web.dart' as web;
 
 import 'api_client.dart';
+import 'theme.dart';
 
 /// Texte + formules : le serveur renvoie du HTML sûr (texte échappé + MathML) que le navigateur
 /// dessine nativement, sans connexion internet ni police à télécharger.
@@ -67,6 +68,8 @@ class _MathViewState extends State<MathView> {
     content.innerHTML = html.toJS;
   }
 
+  static String _css(Color c) => 'rgb(${(c.r * 255).round()}, ${(c.g * 255).round()}, ${(c.b * 255).round()})';
+
   void _created(Object element) {
     final host = element as web.HTMLDivElement;
     host.style
@@ -75,9 +78,9 @@ class _MathViewState extends State<MathView> {
     final content = web.document.createElement('div') as web.HTMLDivElement;
     content.style
       ..fontSize = '${widget.fontSize}px'
-      ..lineHeight = '1.6'
-      ..fontFamily = 'system-ui, -apple-system, "Segoe UI", sans-serif'
-      ..color = '#1f2937'
+      ..lineHeight = '1.7'
+      ..fontFamily = 'Nunito, system-ui, -apple-system, "Segoe UI", sans-serif'
+      ..color = _css(Palette.of(context).ink)
       ..whiteSpace = 'normal'
       ..overflowWrap = 'anywhere';
     host.append(content);
