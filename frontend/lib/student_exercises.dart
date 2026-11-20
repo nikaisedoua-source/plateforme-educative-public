@@ -513,6 +513,9 @@ class _QuestionCardState extends State<QuestionCard> {
   );
   late String? _status = widget.question['last_result'] as String?;
   late bool _writing = widget.question['kind'] != 'proof' || widget.question['last_answer'] != null;
+  // Réponse en mots (« AHB est un triangle … ») : champ texte ; calcul : clavier mathématique.
+  late bool _plain = _looksVerbal('${widget.question['text']}');
+  late final _plainText = TextEditingController(text: _plain ? '${widget.question['last_answer'] ?? ''}' : '');
   String? _message;
   bool _busy = false;
 
@@ -522,11 +525,12 @@ class _QuestionCardState extends State<QuestionCard> {
   @override
   void dispose() {
     _text.dispose();
+    _plainText.dispose();
     super.dispose();
   }
 
   Future<void> _send({String? selfCheck}) async {
-    final answer = _proof ? _text.text.trim() : _latex.trim();
+    final answer = _proof ? _text.text.trim() : (_plain ? _plainText.text.trim() : _latex.trim());
     if (selfCheck == null && answer.isEmpty) {
       setState(() => _message = 'Écris ta réponse avant de l’envoyer.');
       return;
@@ -609,11 +613,29 @@ class _QuestionCardState extends State<QuestionCard> {
           else ...[
             if (_proof)
               WritingPad(api: widget.api, controller: _text, hint: 'Rédige ta démonstration étape par étape…')
+            else if (_plain)
+              TextField(
+                controller: _plainText,
+                minLines: 1,
+                maxLines: 4,
+                textInputAction: TextInputAction.done,
+                onSubmitted: _busy ? null : (_) => _send(),
+                decoration: const InputDecoration(hintText: 'Écris ta réponse…'),
+              )
             else
               MathInput(
                 initial: _latex,
                 onChanged: (value) => _latex = value,
                 onSubmit: _busy ? null : () => _send(),
+              ),
+            if (!_proof)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () => setState(() => _plain = !_plain),
+                  icon: Icon(_plain ? Icons.functions_rounded : Icons.text_fields_rounded, size: 18),
+                  label: Text(_plain ? 'Clavier mathématique' : 'Répondre en texte'),
+                ),
               ),
             const SizedBox(height: 10),
             Align(
@@ -765,3 +787,6 @@ class _Info extends StatelessWidget {
     child: Text(text, style: const TextStyle(fontWeight: FontWeight.w800, color: Brand.muted)),
   );
 }
+
+/// Vrai quand la question attend des mots plutôt qu'un calcul : ni chiffre, ni signe de calcul, ni LaTeX.
+bool _looksVerbal(String text) => !RegExp(r'[0-9=+×÷^√$\\]').hasMatch(text);

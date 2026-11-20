@@ -18,6 +18,11 @@ from test_student import _student, isolated_storage, world  # noqa: F401
     ("2/4", r"\frac12", True),
     (r"2\left(x+1\right)", "2x+2", True),
     (r"\sqrt{2}x^2-3", r"x^{2}\sqrt{2}-3", True),
+    (r"x\sqrt{2}", r"\sqrt{2}x", True),
+    ("la hauteur", "hauteur", True),
+    ("Rectangle", "rectangle", True),
+    ("niche", "chien", False),
+    ("tcerangle", "rectangle", False),
     (r"S=\{3;2\}", r"\{2 ; 3\}", True),
     ("x=4", "4", True),
     ("4", "x = 4", True),
@@ -250,3 +255,11 @@ def test_exam_rubrics_split_subjects_and_bareme():
     assert first.text.startswith("« Lis le texte") and first.page_start == 1
     # Sans le mode examen, rien ne change pour les manuels.
     assert all(s.subject is None for s in segment(pages))
+
+
+def test_correction_labels_match_by_last_part():
+    from app.rewrite import _label_key
+
+    assert _label_key("2.a)") == "2.a"
+    assert _label_key("2 a", last=True) == _label_key("a)") == "a"
+    assert _label_key(None) == ""

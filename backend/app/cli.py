@@ -165,7 +165,9 @@ def rewrite_command(args: argparse.Namespace) -> None:
             query = query.where(Exercise.document_id.in_(args.documents))
         if args.matieres:
             query = query.where(Subject.name.in_(args.matieres))
-        if not args.refaire:
+        if args.corrige_seulement:
+            query = query.where(Exercise.rewrite_status.in_(("ok", "doubtful")), Exercise.correction.has())
+        elif not args.refaire:
             query = query.where(Exercise.rewrite_status == "none")
         ids = list(db.scalars(query.order_by(Exercise.is_published.desc(), priority, Exercise.document_id,
                                              Exercise.sort_order, Exercise.id).limit(args.limite)))
@@ -178,7 +180,7 @@ def rewrite_command(args: argparse.Namespace) -> None:
             exercise = db.get(Exercise, exercise_id)
             cache = caches.setdefault(exercise.document_id, _PageCache(storage.resolve(exercise.document.storage_key)))
             try:
-                status = rewrite_exercise(db, exercise, cache)
+                status = exercise.rewrite_status if args.corrige_seulement else rewrite_exercise(db, exercise, cache)
                 corrected = "—"
                 if not args.sans_corrige and status != "failed" and exercise.correction is not None:
                     corrected = rewrite_correction(db, exercise)
@@ -225,6 +227,8 @@ def main() -> None:
     write.add_argument("--limite", type=int, default=None, help="Nombre maximal d'exercices")
     write.add_argument("--refaire", action="store_true", help="Refaire aussi les exercices déjà réécrits")
     write.add_argument("--sans-corrige", action="store_true", help="Ne pas réécrire les corrigés")
+    write.add_argument("--corrige-seulement", action="store_true",
+                       help="Relire seulement les corrigés des exercices déjà réécrits (résultats attendus)")
     args = parser.parse_args()
     if args.command == "create-admin":
         create_admin(args.email)

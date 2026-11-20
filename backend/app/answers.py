@@ -31,6 +31,20 @@ def _plain_text(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", " ", value).strip()
 
 
+# Mot d'au moins trois lettres hors commande LaTeX : la réponse est rédigée (« rectangle », « la hauteur »)
+# et se compare comme un texte, jamais comme un produit de variables (sinon « chien » vaudrait « niche »).
+WORD = re.compile(r"(?<![\\A-Za-z])[A-Za-zÀ-ÿœ]{3,}")
+ARTICLES = re.compile(r"^(?:(?:le|la|les|l|un|une|des|du|de|d)\s+)+")
+
+
+def _words(value: str) -> str:
+    return ARTICLES.sub("", _plain_text(value))
+
+
+def _is_text(value: str) -> bool:
+    return any(match.group(0) not in SAFE_NAMES for match in WORD.finditer(value))
+
+
 def _braced(text: str, start: int) -> tuple[str, int]:
     """Contenu de l'accolade ouvrante située à `start` et position après l'accolade fermante."""
     depth = 0
@@ -80,7 +94,8 @@ def latex_to_python(latex: str) -> str:
                 degree, index = text[index + 1:end], end + 1
             body, index = _argument(text, index)
             body = latex_to_python(body)
-            out.append(f"root(({body}),({latex_to_python(degree)}))" if degree else f"sqrt({body})")
+            # Espace devant : « x\sqrt{2} » ne doit pas devenir « xsqrt(2) », lu comme un produit de lettres.
+            out.append(f" root(({body}),({latex_to_python(degree)}))" if degree else f" sqrt({body})")
             continue
         if text[index] == "^":
             power, index = _argument(text, index + 1)
@@ -170,6 +185,9 @@ def equivalent(given: str | None, expected: str | None) -> bool | None:
         if word not in WORDS_TRUE | WORDS_FALSE:
             return False
         return (word in WORDS_TRUE) == (_plain_text(expected) in WORDS_TRUE)
+
+    if _is_text(expected):
+        return _words(given) == _words(expected)
 
     expected_set, given_set = SET.match(expected.replace("\\{", "{")), SET.match(given)
     if expected_set:

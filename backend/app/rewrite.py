@@ -76,6 +76,9 @@ Règles absolues :
 - Si une figure est dessinée, écris [figure].
 Ensuite, pour chacune de ces questions, donne le résultat final court s'il est écrit explicitement dans ce
 corrigé (par exemple "x = 4", "\\frac{20}{7}", "S = \\{2 ; 3\\}", "vrai"), en LaTeX sans $ ; sinon "".
+Le résultat peut aussi être le mot ou la courte expression qui complète la phrase (par exemple "hauteur",
+"rectangle", "perpendiculaires") : recopie-le tel qu'il est écrit dans le corrigé, sans les points du barème.
+Une question "2.a" peut être numérotée seulement "a)" dans le corrigé.
 Questions : {questions}
 
 Texte extrait automatiquement (il peut être déformé, sers-t'en seulement pour lire les mots) :
@@ -364,6 +367,12 @@ def rewrite_exercise(db: Session, exercise: Exercise, cache: _PageCache | None =
     return exercise.rewrite_status
 
 
+def _label_key(label, last: bool = False) -> str:
+    """Numéro de question comparable : « 2.a) », « 2 a », « 2-a » → « 2.a » ; `last` ne garde que « a »."""
+    parts = [part for part in re.split(r"[\s.\-)(/]+", str(label or "").lower()) if part]
+    return ".".join(parts[-1:] if last else parts)
+
+
 def rewrite_correction(db: Session, exercise: Exercise, cache: _PageCache | None = None) -> str:
     """Réécrit le corrigé et retient le résultat de chaque question quand il y figure."""
     correction = exercise.correction
@@ -388,11 +397,13 @@ def rewrite_correction(db: Session, exercise: Exercise, cache: _PageCache | None
     problems = fidelity_problems(raw, text)
     correction.text_latex = text
     correction.rewrite_status = "doubtful" if problems else "ok"
-    by_label = {str(item.get("numero", "")).strip(): str(item.get("resultat", "")).strip()
+    by_label = {_label_key(item.get("numero")): str(item.get("resultat", "")).strip()
                 for item in result.get("resultats") or [] if isinstance(item, dict)}
     kept = 0
     for question in exercise.questions:
-        answer = by_label.get(question.label, "")
+        # Le corrigé numérote souvent « a) » là où la question s'appelle « 2.a » : on essaie le numéro
+        # complet, puis sa dernière partie.
+        answer = by_label.get(_label_key(question.label)) or by_label.get(_label_key(question.label, last=True), "")
         if question.kind == "result" and not problems and answer_supported(answer, text, raw):
             question.expected_answer = answer
             kept += 1
