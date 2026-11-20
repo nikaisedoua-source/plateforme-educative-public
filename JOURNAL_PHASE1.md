@@ -37,3 +37,10 @@ Ce fichier est le point de reprise partagé pour les agents qui travaillent sur 
 ### Suivi demandé par l’utilisateur — 2026-11-20
 
 - À partir de maintenant, ajouter ici une note après chaque étape, puis garder le journal à jour dans le dépôt pour que KILO puisse consulter l’avancement.
+
+
+### 2026-11-20 — journal partagé et état de l’installation (01:47 UTC)
+
+- Ajout de ce journal au dépôt par commit `90cca2e`, afin que les agents qui partagent le projet puissent reprendre sur une référence stable.
+- Vérification : le projet n’expose pas de tâche KILO distincte dans la liste Manus accessible; le fichier commité à la racine du dépôt est donc le point de passage partagé.
+- Homebrew indique toujours l’installation en cours. La liste des formules installées ne montre encore ni PostgreSQL 18 ni Flutter. Les commandes de diagnostic processus sont bloquées par la permission locale (`ps: Operation not permitted`); aucune seconde installation n’a été lancée.
