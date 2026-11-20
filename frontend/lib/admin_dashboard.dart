@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import 'api_client.dart';
+import 'memory_admin.dart';
 import 'parcours_picker.dart' show trackKindLabels;
 import 'library_admin_stub.dart'
     if (dart.library.js_interop) 'library_admin.dart';
@@ -977,6 +978,20 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     ),
                   ),
             icon: const Icon(Icons.library_books_rounded),
+          ),
+          IconButton(
+            tooltip: 'Mémorisation (cartes, méthodes, répétition espacée)',
+            onPressed: _loading
+                ? null
+                : () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => MemoryAdmin(
+                        api: widget.api,
+                        onSignOut: widget.onSignOut,
+                      ),
+                    ),
+                  ),
+            icon: const Icon(Icons.style_rounded),
           ),
           TextButton.icon(
             onPressed: widget.onSignOut,
