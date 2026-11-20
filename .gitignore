@@ -1,0 +1,48 @@
+# Secrets et configuration locale
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# Bases de donnes, sauvegardes et donnes locales
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+*.backup
+/data/
+/storage/
+/uploads/
+
+# Documents pdagogiques fournis : ne jamais versionner les originaux
+/documents_organisés/
+/documents_organisés/
+
+# Flutter / Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# IDE et systmes d'exploitation
+.idea/
+.vscode/
+.DS_Store
+._*
+
+# Python / FastAPI
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Fichiers temporaires locaux de l'environnement de travail
+/.manus-*.tmp
+**/.manus-*.tmp
+*.egg-info/
