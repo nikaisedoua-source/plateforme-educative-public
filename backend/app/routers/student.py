@@ -188,7 +188,10 @@ def my_exercise(exercise_id: int, db: Session = Depends(get_db), user: User = De
             "last_answer": last[q.id].answer_latex if q.id in last else None,
         } for q in (exercise.questions if rewritten else [])],
         "options": [{"id": o.id, "label": o.label, "text": o.text} for o in exercise.options],
-        "assets": [{"id": a.id, "kind": a.kind, "caption": a.caption} for a in exercise.assets],
+        # Une capture de page entière montrerait aussi les exercices voisins : quand la zone recadrée de
+        # l'exercice est disponible (original.png), elle la remplace.
+        "assets": [{"id": a.id, "kind": a.kind, "caption": a.caption} for a in exercise.assets
+                   if not (has_original and a.kind == "page")],
         "source": f"{document.title}, p. {exercise.page_start}"
                   + (f", exercice {exercise.source_number}" if exercise.source_number else ""),
         "correction_available": available, "correction_rule": rule,

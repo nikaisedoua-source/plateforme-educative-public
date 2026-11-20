@@ -219,7 +219,7 @@ class _StudentExercisePageState extends State<StudentExercisePage> {
   final _answer = TextEditingController();
   String _latex = '';
   bool _busy = false;
-  bool _showOriginal = false;
+  bool? _showOriginal; // null : ouvert d'office quand l'énoncé renvoie à une figure
   String? _error;
 
   @override
@@ -331,6 +331,7 @@ class _StudentExercisePageState extends State<StudentExercisePage> {
     final originalFirst = e['original_first'] == true;
     final rewritten = e['rewrite_status'] == 'ok' || e['rewrite_status'] == 'doubtful';
     final original = AuthImage(api: widget.api, path: '/api/v1/student/exercises/${e['id']}/original.png');
+    final showOriginal = _showOriginal ?? '${e['statement']}'.contains('[figure]');
     return ChunkCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -362,12 +363,12 @@ class _StudentExercisePageState extends State<StudentExercisePage> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(
-                  onPressed: () => setState(() => _showOriginal = !_showOriginal),
-                  icon: Icon(_showOriginal ? Icons.expand_less_rounded : Icons.image_outlined),
-                  label: Text(_showOriginal ? 'Masquer l’original' : 'Voir l’énoncé d’origine'),
+                  onPressed: () => setState(() => _showOriginal = !showOriginal),
+                  icon: Icon(showOriginal ? Icons.expand_less_rounded : Icons.image_outlined),
+                  label: Text(showOriginal ? 'Masquer l’original' : 'Voir l’énoncé d’origine'),
                 ),
               ),
-            if (_showOriginal) ClipRRect(borderRadius: BorderRadius.circular(14), child: original),
+            if (showOriginal) ClipRRect(borderRadius: BorderRadius.circular(14), child: original),
           ],
           for (final asset in (e['assets'] as List).cast<Map>()) ...[
             const SizedBox(height: 12),
