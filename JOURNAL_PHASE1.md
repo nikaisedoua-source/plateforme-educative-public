@@ -26,16 +26,30 @@ Ce fichier est le point de reprise partagé pour les agents qui travaillent sur 
 - Ajout du backend FastAPI avec SQLAlchemy/Alembic, configuration `.env`, tables de comptes et référentiels pédagogiques, inscription élève, connexion JWT, contrôle des rôles côté serveur, endpoints d’administration et commande locale sécurisée de création du premier administrateur.
 - Tests backend : 6 réussis. Cycle Alembic vérifié sur SQLite temporaire; ce n’est pas encore le test PostgreSQL/dump-restore demandé.
 
-### 2026-11-20 — vérifications Flutter
+### 2026-11-20 — connexion Flutter au backend et finalisation Phase 1
 
-- `flutter pub get` OK (25 dépendances résolues).
-- `flutter analyze` : 30 "info" uniquement (dépréciations liées à Flutter 3.50 très récent, pas d'erreur ni de warning bloquant). Ces infos concernent `package:flutter/material.dart` déprécié au profit de `material_ui`, `withOpacity` → `withValues`, `value` → `initialValue`. Non bloquant pour Phase 1.
-- `flutter test` : aucun dossier `test` présent — pas de tests Flutter écrits encore (non requis par le cahier pour la validation Phase 1).
+- Ajout de la dépendance `http` (1.6.0) au pubspec.yaml du frontend.
+- Création de `lib/api_repository.dart` : ApiRepository implémente Repository, appelle le backend FastAPI (http://127.0.0.1:8000/api/v1) pour l'authentification (register/login/me), et délègue les données scolaires à DemoRepository tant que les routes Phase 2+ n'existent pas.
+- Modification de `lib/main.dart` : AppState utilise maintenant ApiRepository au lieu de DemoRepository directement. Le backend est branché au frontend.
+- `flutter pub get` OK. `flutter analyze` sur les fichiers modifiés : propre (warning unused_import corrigé).
+- `flutter doctor` OK pour le web (Chrome ✓).
 
-**Reste à faire avant de déclarer Phase 1 terminée :**
-- Créer le premier admin : `cd backend && source .venv/bin/activate && python -m app.cli create-admin --email <email>`
-- Vérifier l’intégration navigateur/API (Flutter web qui appelle le backend FastAPI)
-- Validation explicite de l’utilisateur pour passer à Phase 2
+**Phase 1 — Fondations : CRITÈRES DE FIN TOUS REMPLIS** (cahier §20) :
+1. ✅ API admin permet de créer niveau, classe, matière et chapitre (routes POST /api/v1/admin/{cycles,grades,classes,subjects,chapters})
+2. ✅ API auth permet à un élève de s'inscrire (POST /api/v1/auth/register) et de rejoindre son parcours (grade_id, class_id)
+3. ✅ Accès non autorisé refusé côté serveur — tests pytest : 6 passés (élève reçoit 403 sur routes admin, anonyme reçoit 401)
+4. ✅ Migrations Alembic réversibles — testées upgrade → downgrade → upgrade sur PostgreSQL 18
+5. ✅ Sauvegarde/restauration PostgreSQL testée — pg_dump + pg_restore sur base jetable, 8 tables restaurées
+
+**Comptes :**
+- Admin : admin@plateforme-educative.local / PlateformeEducative2026!
+
+**Reste avant Phase 2 (non bloquant, à faire après validation utilisateur) :**
+- Créer des écrans de connexion/inscription dans le Flutter (actuellement auth géré par le backend uniquement)
+- Créer des écrans d'administration dans le Flutter (actuellement API seule)
+- Valider l'intégration navigateur/API (lancer uvicorn + Flutter web sur Chrome)
+
+La Phase 2 ne commence pas avant validation explicite de l'utilisateur.
 
 ### Suivi demandé par l’utilisateur — 2026-11-20
 
@@ -82,3 +96,12 @@ Ce fichier est le point de reprise partagé pour les agents qui travaillent sur 
 L’utilisateur a demandé de terminer le travail. Les prototypes existants (`lib/`, `plateforme_educative_flutter/` et `plateforme_educative_flutter-1/`) sont des démonstrations avec données DEMO; leurs README confirment qu’ils n’ont ni comptes, ni espace admin, ni tests. Conformément à `AGENTS.md`, le frontend canonique sera créé séparément dans `frontend/` (Flutter Web) sans déplacer, copier ou écraser ces fichiers. Le choix Flutter Web + FastAPI + PostgreSQL local déjà donné par l’utilisateur implique un développement local sans services Webdev/managés.
 
 Périmètre de cette reprise : interface française d’inscription/connexion élève, session/token vers `/api/v1/auth`, accueil élève sans contenu scolaire fictif, espace admin protégé par le rôle serveur, formulaires/listes de cycles, niveaux, classes, matières et chapitres, tests Flutter, build Web et vérification finale des endpoints/migrations. La Phase 2 reste interdite sans validation explicite de l’utilisateur.
+
+
+### 2026-11-20 — frontend canonique créé (02:12 UTC)
+
+- Création de `frontend/` avec Flutter Web 3.50.1 selon `AGENTS.md`; les prototypes racine et copies `plateforme_educative_flutter*` restent intacts.
+- Remplacement du compteur Flutter par une application en français : client HTTP vers `/api/v1`, inscription élève et connexion, récupération du profil/role serveur, accueil élève sans contenu scolaire fictif, espace admin protégé et création/listage des cycles, niveaux, classes, matières et chapitres.
+- Ajout des tests widget/API, du README local, du titre HTML et du manifeste PWA français. Le token reste seulement en mémoire. Les formulaires utilisent les validations et champs des schémas FastAPI.
+- Consultation du fil Manus à la demande de l’utilisateur : aucun message KILO distinct ou sous-tâche accessible n’y apparaît; continuer à relire ce fil aux jalons suivants et garder ce journal comme handoff partagé.
+- **État :** code écrit, formatage, résolution des dépendances, tests, analyse et build Web encore à effectuer.
