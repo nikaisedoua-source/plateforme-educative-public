@@ -20,3 +20,10 @@
 
 **Note** : les anciens fichiers non versionnés `routers/exercises.py` et `tests/test_exercises.py` ne sont plus
 utilisés (remplacés par `routers/student.py` et `tests/test_student.py`) ; ils ne sont pas supprimés sans votre accord.
+
+## Étape 2 — Écrans élève et réglage d'accès aux corrigés (2026-11-20)
+
+- Espace élève (web) : onglets Matières et Exercices actifs seulement si le parcours est validé ; liste filtrée par matière et chapitre, page d'exercice avec énoncé en LaTeX rendu en MathML, images servies par l'API, source citée, réponse (QCM ou texte), résultat calculé par le serveur, historique des essais, bouton « Voir le corrigé » soumis à la règle.
+- Administration : bouton « Accès aux corrigés » (règle générale : toujours, après une réponse, après une bonne réponse ou N essais, jamais) et choix par exercice (« Règle générale » par défaut).
+- Vérifications : `flutter analyze` (seuls les 6 avertissements anciens de `theme.dart`), `pytest` 29 réussis, site rechargé sur http://localhost:8080.
+- Non vérifié à l'écran : les pages connectées (aucun compte de test utilisé sur la base réelle).

@@ -333,6 +333,46 @@ class ApiClient {
     ),
   );
 
+  Future<Map<String, dynamic>> getCorrectionAccess() async =>
+      _map(await _request('GET', '/api/v1/library/settings/correction-access', authenticated: true));
+
+  Future<Map<String, dynamic>> setCorrectionAccess(String mode, int attempts) async => _map(
+    await _request(
+      'PUT',
+      '/api/v1/library/settings/correction-access',
+      authenticated: true,
+      body: {'mode': mode, 'attempts': attempts},
+    ),
+  );
+
+  // ------------------------------------------------------------------ espace élève
+
+  Future<List<Map<String, dynamic>>> studentSubjects() async =>
+      _list(await _request('GET', '/api/v1/student/subjects', authenticated: true));
+
+  Future<List<Map<String, dynamic>>> studentExercises({int? subjectId, int? chapterId}) async => _list(
+    await _request(
+      'GET',
+      '/api/v1/student/exercises${_query({'subject_id': subjectId, 'chapter_id': chapterId})}',
+      authenticated: true,
+    ),
+  );
+
+  Future<Map<String, dynamic>> studentExercise(int id) async =>
+      _map(await _request('GET', '/api/v1/student/exercises/$id', authenticated: true));
+
+  Future<Map<String, dynamic>> submitAttempt(int id, {String? answer, List<int>? optionIds}) async => _map(
+    await _request(
+      'POST',
+      '/api/v1/student/exercises/$id/attempts',
+      authenticated: true,
+      body: {'answer_text': ?answer, 'option_ids': ?optionIds},
+    ),
+  );
+
+  Future<Map<String, dynamic>> studentCorrection(int id) async =>
+      _map(await _request('GET', '/api/v1/student/exercises/$id/correction', authenticated: true));
+
   /// Texte avec formules LaTeX → HTML sûr (texte échappé + MathML).
   Future<Map<String, dynamic>> renderMath(String text) async => _map(
     await _request('POST', '/api/v1/math/render', authenticated: true, body: {'text': text}),

@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import 'api_client.dart';
 import 'parcours_picker.dart';
+import 'student_exercises.dart';
 import 'theme.dart';
 
 class StudentHomePage extends StatefulWidget {
@@ -292,15 +293,16 @@ class _StudentHomePageState extends State<StudentHomePage> {
               style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Les activités scolaires apparaîtront ici lorsque l’administrateur aura importé des documents, extrait des exercices et les aura validés.',
-              style: TextStyle(color: Color(0xFF606B80)),
+            Text(
+              _approved
+                  ? 'Vos exercices vous attendent dans « Matières » et « Exercices ».'
+                  : 'Les activités scolaires apparaîtront ici dès que votre parcours sera validé.',
+              style: const TextStyle(color: Color(0xFF606B80)),
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'Aucun contenu scolaire n’est affiché pour le moment.',
-              style: TextStyle(fontWeight: FontWeight.w800, color: Brand.muted),
-            ),
+            if (_approved) ...[
+              const SizedBox(height: 16),
+              PressButton(label: 'Commencer', primary: true, onPressed: () => setState(() => _tab = 1)),
+            ],
           ],
         ),
       ),
@@ -314,31 +316,31 @@ class _StudentHomePageState extends State<StudentHomePage> {
     ];
   }
 
+  bool get _approved => _profile['enrollment_status'] == 'approved';
+
+  List<Widget> _waitForApproval() => [
+    const Text(
+      'Les exercices de votre niveau et de votre série apparaîtront ici dès que l’administration aura validé votre parcours.',
+      style: TextStyle(fontWeight: FontWeight.w800, color: Brand.muted),
+    ),
+    const SizedBox(height: 16),
+    _parcoursCard(),
+  ];
+
   List<Widget> _matieres() {
-    return [
-      const Text(
-        'Les matières apparaîtront ici après leur création par l’administrateur.',
-        style: TextStyle(color: Color(0xFF606B80)),
-      ),
-      const SizedBox(height: 16),
-      const Text(
-        'Aucune matière configurée pour le moment.',
-        style: TextStyle(fontWeight: FontWeight.w800, color: Brand.muted),
-      ),
-    ];
+    if (!_approved) return _waitForApproval();
+    return [StudentSubjectsView(api: widget.api)];
   }
 
   List<Widget> _exercices() {
+    if (!_approved) return _waitForApproval();
     return [
       const Text(
-        'Les exercices apparaîtront ici après leur extraction et validation.',
+        'Tous les exercices validés de votre niveau et de votre série.',
         style: TextStyle(color: Color(0xFF606B80)),
       ),
       const SizedBox(height: 16),
-      const Text(
-        'Aucun exercice disponible pour le moment.',
-        style: TextStyle(fontWeight: FontWeight.w800, color: Brand.muted),
-      ),
+      StudentExerciseList(api: widget.api),
     ];
   }
 

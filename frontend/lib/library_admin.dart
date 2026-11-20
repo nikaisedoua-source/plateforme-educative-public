@@ -8,6 +8,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:web/web.dart' as web;
 
 import 'api_client.dart';
+import 'auth_image.dart';
 import 'math_view.dart';
 import 'theme.dart';
 
@@ -114,51 +115,6 @@ class Refs {
   }
 }
 
-/// Image servie par l'API avec le jeton (aperçu de page, figure recadrée).
-class AuthImage extends StatefulWidget {
-  const AuthImage({super.key, required this.api, required this.path, this.height});
-  final ApiClient api;
-  final String path;
-  final double? height;
-
-  @override
-  State<AuthImage> createState() => _AuthImageState();
-}
-
-class _AuthImageState extends State<AuthImage> {
-  late Future<Uint8List> _bytes = widget.api.fetchBytes(widget.path);
-
-  @override
-  void didUpdateWidget(AuthImage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.path != widget.path) _bytes = widget.api.fetchBytes(widget.path);
-  }
-
-  @override
-  Widget build(BuildContext context) => FutureBuilder<Uint8List>(
-    future: _bytes,
-    builder: (context, snapshot) {
-      if (snapshot.hasError) {
-        return SizedBox(
-          height: widget.height ?? 120,
-          child: Center(child: Text('Aperçu indisponible : ${snapshot.error}')),
-        );
-      }
-      if (!snapshot.hasData) {
-        return SizedBox(
-          height: widget.height ?? 120,
-          child: const Center(child: CircularProgressIndicator()),
-        );
-      }
-      return Image.memory(
-        snapshot.data!,
-        height: widget.height,
-        fit: BoxFit.contain,
-        gaplessPlayback: true,
-      );
-    },
-  );
-}
 
 Future<({String name, Uint8List bytes})?> pickFile() async {
   final input = web.HTMLInputElement()
@@ -305,6 +261,14 @@ class _LibraryAdminState extends State<LibraryAdmin> {
         appBar: AppBar(
           title: const Text('Bibliothèque documentaire'),
           actions: [
+            TextButton.icon(
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) => CorrectionAccessDialog(api: widget.api),
+              ),
+              icon: const Icon(Icons.lock_clock_rounded),
+              label: const Text('Accès aux corrigés'),
+            ),
             IconButton(
               tooltip: 'Actualiser',
               onPressed: _busy ? null : _reload,
@@ -1097,6 +1061,7 @@ class _ExerciseEditorPageState extends State<ExerciseEditorPage> {
   final _capturePage = TextEditingController();
   String _type = 'libre';
   int _difficulty = 2;
+  String? _access;
   int? _grade, _subject, _chapter;
   List<int> _tracks = [];
   List<_OptionRow> _options = [];
@@ -1128,6 +1093,7 @@ class _ExerciseEditorPageState extends State<ExerciseEditorPage> {
     _tolerance.text = e['numeric_tolerance'] == null ? '' : '${e['numeric_tolerance']}';
     _points.text = '${e['points']}';
     _type = '${e['exercise_type']}';
+    _access = e['correction_access'] as String?;
     _difficulty = e['difficulty'] as int;
     _grade = e['grade_id'] as int?;
     _tracks = ((e['track_ids'] as List?) ?? const []).cast<int>();
@@ -1164,6 +1130,7 @@ class _ExerciseEditorPageState extends State<ExerciseEditorPage> {
       'track_ids': _tracks,
       'subject_id': _subject,
       'chapter_id': _chapter,
+      'correction_access': _access,
       if (withOptions)
         'options': [
           for (final o in _options)
@@ -1428,6 +1395,20 @@ class _ExerciseEditorPageState extends State<ExerciseEditorPage> {
                 width: 100,
                 child: TextField(controller: _points, decoration: const InputDecoration(labelText: 'Points')),
               ),
+              SizedBox(
+                width: 300,
+                child: DropdownButtonFormField<String?>(
+                  initialValue: _access,
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Accès au corrigé pour cet exercice'),
+                  items: [
+                    const DropdownMenuItem<String?>(value: null, child: Text('Règle générale')),
+                    for (final entry in correctionAccessLabels.entries)
+                      DropdownMenuItem<String?>(value: entry.key, child: Text(entry.value)),
+                  ],
+                  onChanged: (value) => setState(() => _access = value),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -1585,5 +1566,95 @@ class _ExerciseEditorPageState extends State<ExerciseEditorPage> {
               '${entry['action']}${entry['actor_id'] == null ? ' (import automatique)' : ''}'),
       ],
     ),
+  );
+}
+
+
+const correctionAccessLabels = {
+  'always': 'Toujours visible',
+  'after_attempt': 'Après une première réponse',
+  'after_success_or_attempts': 'Après une bonne réponse ou N essais',
+  'never': 'Jamais (réservé à l’enseignant)',
+};
+
+/// Règle générale d'accès des élèves aux corrigés (modifiable sans toucher au code).
+class CorrectionAccessDialog extends StatefulWidget {
+  const CorrectionAccessDialog({super.key, required this.api});
+  final ApiClient api;
+
+  @override
+  State<CorrectionAccessDialog> createState() => _CorrectionAccessDialogState();
+}
+
+class _CorrectionAccessDialogState extends State<CorrectionAccessDialog> {
+  String _mode = 'after_attempt';
+  int _attempts = 2;
+  bool _loaded = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.api.getCorrectionAccess().then((value) {
+      if (!mounted) return;
+      setState(() {
+        _mode = '${value['mode']}';
+        _attempts = value['attempts'] as int;
+        _loaded = true;
+      });
+    }).catchError((Object error) {
+      if (mounted) setState(() => _error = '$error');
+    });
+  }
+
+  Future<void> _save() async {
+    try {
+      await widget.api.setCorrectionAccess(_mode, _attempts);
+      if (mounted) Navigator.of(context).pop();
+    } catch (error) {
+      setState(() => _error = '$error');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Accès des élèves aux corrigés'),
+    content: !_loaded && _error == null
+        ? const SizedBox(height: 80, child: Center(child: CircularProgressIndicator()))
+        : Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RadioGroup<String>(
+                groupValue: _mode,
+                onChanged: (value) => setState(() => _mode = value ?? _mode),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final entry in correctionAccessLabels.entries)
+                      RadioListTile<String>(value: entry.key, title: Text(entry.value)),
+                  ],
+                ),
+              ),
+              if (_mode == 'after_success_or_attempts')
+                Row(
+                  children: [
+                    const Text('Nombre d’essais : '),
+                    DropdownButton<int>(
+                      value: _attempts,
+                      items: [for (var n = 1; n <= 10; n++) DropdownMenuItem(value: n, child: Text('$n'))],
+                      onChanged: (value) => setState(() => _attempts = value ?? _attempts),
+                    ),
+                  ],
+                ),
+              const Text('Une règle propre à un exercice reste prioritaire.',
+                  style: TextStyle(fontSize: 13, color: Brand.muted)),
+              if (_error != null) Text(_error!, style: const TextStyle(color: Brand.bad)),
+            ],
+          ),
+    actions: [
+      TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Annuler')),
+      FilledButton(onPressed: _loaded ? _save : null, child: const Text('Enregistrer')),
+    ],
   );
 }
