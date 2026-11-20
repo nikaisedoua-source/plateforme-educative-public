@@ -329,7 +329,6 @@ class _StudentExercisePageState extends State<StudentExercisePage> {
   Widget _statementCard(Map<String, dynamic> e) {
     final hasOriginal = (e['original_pages'] as List).isNotEmpty;
     final originalFirst = e['original_first'] == true;
-    final rewritten = e['rewrite_status'] == 'ok' || e['rewrite_status'] == 'doubtful';
     final original = AuthImage(api: widget.api, path: '/api/v1/student/exercises/${e['id']}/original.png');
     final showOriginal = _showOriginal ?? '${e['statement']}'.contains('[figure]');
     return ChunkCard(
@@ -348,15 +347,9 @@ class _StudentExercisePageState extends State<StudentExercisePage> {
             ClipRRect(borderRadius: BorderRadius.circular(14), child: original),
             const SizedBox(height: 6),
             const Text('Énoncé tel qu’il figure dans le document.', style: TextStyle(color: Brand.muted, fontSize: 13)),
-            if (rewritten)
-              ExpansionTile(
-                tilePadding: EdgeInsets.zero,
-                title: const Text('Version mise en forme (à vérifier avec l’original)',
-                    style: TextStyle(fontWeight: FontWeight.w700)),
-                children: [MathView(api: widget.api, text: '${e['statement']}', fontSize: 17)],
-              )
-            else
-              MathView(api: widget.api, text: '${e['statement']}', fontSize: 17),
+            // Un seul énoncé (décision utilisateur du 2026-11-20) : tant que la réécriture n'est pas sûre, l'élève
+            // lit seulement la capture du document. Le texte extrait du PDF casse les formules (flèches de
+            // vecteurs, fractions sur plusieurs lignes) et une réécriture douteuse pourrait différer du document.
           ] else ...[
             MathView(api: widget.api, text: '${e['statement']}', fontSize: 17),
             if (hasOriginal)

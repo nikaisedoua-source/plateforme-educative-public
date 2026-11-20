@@ -133,3 +133,30 @@ def test_methods_need_principle_and_steps(client: TestClient, world: dict):
 def test_spaced_settings(client: TestClient, world: dict, body, code):
     response = client.put("/api/v1/memory/settings/spaced-repetition", json=body, headers=world["admin"])
     assert response.status_code == code, response.text
+
+
+def test_delegated_approval_writes_every_method_without_overwriting(client: TestClient, world: dict):
+    """Décision du propriétaire (2026-11-20) : les méthodes sont rédigées et approuvées pour lui ; un texte déjà
+    saisi par l'administrateur n'est jamais remplacé."""
+    from sqlalchemy import select
+
+    from app.database import get_db
+    from app.main import app
+    from app.methods_catalog import CATALOG, GUIDE, write_and_approve
+    from app.models import MemoryMethod, User
+
+    admin = world["admin"]
+    methods = client.get("/api/v1/memory/methods", headers=admin).json()
+    assert {m["code"] for m in methods} == set(GUIDE) == {c[0] for c in CATALOG}
+    first = methods[0]
+    client.patch(f"/api/v1/memory/methods/{first['id']}", json={"principle": "Texte admin DEMO",
+                                                                 "steps": ["Étape DEMO"]}, headers=admin)
+    db = next(app.dependency_overrides.get(get_db, get_db)())
+    admin_id = db.scalar(select(User.id).where(User.role == "admin"))
+    assert write_and_approve(db, admin_id) == len(CATALOG)
+    kept = db.get(MemoryMethod, first["id"])
+    assert kept.principle == "Texte admin DEMO" and kept.steps == ["Étape DEMO"]
+    student = _student(client, admin, "d@example.com", "EleveD", world["tle"]["id"], world["tracks"]["TLE-C"])
+    seen = client.get("/api/v1/student/methods", headers=student).json()
+    assert len(seen) == len(CATALOG) and all(m["principle"] and m["steps"] for m in seen)
+    assert write_and_approve(db, admin_id) == 0  # idempotent

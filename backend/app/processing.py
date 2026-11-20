@@ -218,11 +218,12 @@ def segment_document(
         raise ValueError("Des exercices existent déjà pour ce document (utiliser replace=true)")
     kept_titles: set[str] = set()
     for exercise in existing:
-        touched = exercise.validated_by is not None or exercise.is_archived or exercise.status == "rejected"
+        touched = exercise.validated_by is not None or exercise.is_archived or exercise.status == "rejected" \
+            or exercise.rewrite_status in ("ok", "doubtful")  # réécriture d'après l'image : jamais perdue
         answered = db.scalar(select(ExerciseAttempt.id).where(ExerciseAttempt.exercise_id == exercise.id).limit(1))
         if touched or answered is not None:
-            # On ne touche jamais à un contenu relu par l'administrateur ni à un exercice déjà travaillé par
-            # un élève ; un contenu publié automatiquement et jamais utilisé peut être redécoupé.
+            # On ne touche jamais à un contenu relu par l'administrateur, déjà réécrit, ni à un exercice déjà
+            # travaillé par un élève ; un contenu publié automatiquement et jamais utilisé peut être redécoupé.
             kept_titles.add(exercise.title)
             continue
         db.delete(exercise)

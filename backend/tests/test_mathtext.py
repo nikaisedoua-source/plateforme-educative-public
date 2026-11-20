@@ -25,3 +25,9 @@ def test_render_endpoint_requires_login(client: TestClient):
     token = create_user(client, role="student", email="eleve@example.com")
     response = client.post("/api/v1/math/render", json={"text": "$x^2$"}, headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200 and "<msup>" in response.json()["html"]
+
+
+def test_latex_is_kept_escaped_for_katex():
+    result = render(r'Calculer $\frac{1}{2}<x$ puis $$\vec{AB}"$$')
+    assert '<span class="tex" data-display="0" data-tex="\\frac{1}{2}&lt;x">' in result["html"]
+    assert 'data-display="1" data-tex="\\vec{AB}&quot;"' in result["html"]  # guillemet échappé dans l'attribut

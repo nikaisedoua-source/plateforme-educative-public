@@ -1,6 +1,8 @@
 """Formules mathématiques : les énoncés sont saisis en LaTeX ($…$ en ligne, $$…$$ centré).
 
 Le serveur convertit en MathML, que les navigateurs affichent nativement (hors ligne, sans police à télécharger).
+Chaque formule garde aussi son LaTeX (`data-tex`) : l'application web la compose avec KaTeX (copié dans le
+projet, licence MIT), rendu typographique proche d'un document imprimé ; le MathML reste en secours.
 Le texte hors formules est échappé : aucun HTML saisi n'est jamais injecté tel quel dans la page.
 """
 
@@ -36,7 +38,8 @@ def render(text: str) -> dict:
             errors.append(latex)
             out.append(f'<code class="math-error">{html.escape(match.group(0))}</code>')
         else:
-            out.append(mathml)
+            tex = html.escape(latex.strip(), quote=True)
+            out.append(f'<span class="tex" data-display="{int(block)}" data-tex="{tex}">{mathml}</span>')
         position = match.end()
     out.append(html.escape(text[position:]).replace("\\$", "$"))
     return {"html": "".join(out).replace("\n", "<br>"), "errors": errors, "has_math": position > 0 or bool(errors)}

@@ -178,6 +178,9 @@ def rewrite_command(args: argparse.Namespace) -> None:
         started = time.monotonic()
         with factory() as db:
             exercise = db.get(Exercise, exercise_id)
+            if exercise is None:  # supprimé entre-temps (document retraité) : on passe
+                print(f"[{number}/{len(ids)}] exercice {exercise_id} : disparu (document retraité)", flush=True)
+                continue
             cache = caches.setdefault(exercise.document_id, _PageCache(storage.resolve(exercise.document.storage_key)))
             try:
                 status = exercise.rewrite_status if args.corrige_seulement else rewrite_exercise(db, exercise, cache)
@@ -191,6 +194,9 @@ def rewrite_command(args: argparse.Namespace) -> None:
             except Exception as error:  # un exercice illisible n'arrête pas la série
                 db.rollback()
                 exercise = db.get(Exercise, exercise_id)
+                if exercise is None:
+                    print(f"[{number}/{len(ids)}] exercice {exercise_id} : disparu (document retraité)", flush=True)
+                    continue
                 exercise.rewrite_status = "failed"
                 db.commit()
                 status, corrected = "failed", f"erreur : {str(error)[:80]}"
@@ -198,6 +204,32 @@ def rewrite_command(args: argparse.Namespace) -> None:
             print(f"[{number}/{len(ids)}] exercice {exercise_id} : {status} ({len(exercise.questions)} question(s), "
                   f"corrigé {corrected}) en {time.monotonic() - started:.0f} s", flush=True)
     print("Bilan :", ", ".join(f"{key} {value}" for key, value in sorted(counts.items())) or "rien à faire")
+
+
+def approve_methods_command() -> None:
+    """Rédige (si vide) et approuve les méthodes du laboratoire de mémorisation (délégation du propriétaire)."""
+    from app.methods_catalog import write_and_approve
+
+    factory = sessionmaker(bind=get_engine(), autoflush=False, expire_on_commit=False)
+    with factory() as db:
+        admin = db.scalar(select(User.id).where(User.role == "admin").order_by(User.id))
+        if admin is None:
+            raise SystemExit("Aucun administrateur : lancez d'abord create-admin.")
+        print(f"{write_and_approve(db, admin)} méthode(s) approuvée(s).")
+
+
+def precise_cards_command(args: argparse.Namespace) -> None:
+    """Nomme la notion des cartes à la question imprécise (modèle local, mots vérifiés dans le document)."""
+    from app.flashcard_questions import precise_all
+    from app.rewrite import RewriteUnavailable
+
+    factory = sessionmaker(bind=get_engine(), autoflush=False, expire_on_commit=False)
+    with factory() as db:
+        try:
+            totals = precise_all(db, args.ids or None, log=lambda line: print(line, flush=True))
+        except RewriteUnavailable as error:
+            raise SystemExit(str(error)) from None
+    print("Bilan :", ", ".join(f"{key} {value}" for key, value in sorted(totals.items())) or "rien à faire")
 
 
 def main() -> None:
@@ -220,6 +252,9 @@ def main() -> None:
     commands.add_parser("publier-tout", help="Publier tout le contenu extrait pour chaque classe et série")
     check = commands.add_parser("verifier", help="Vérifier chaque exercice publié et chaque document")
     check.add_argument("--simuler", action="store_true", help="Rapport seulement, sans rien retirer")
+    cards = commands.add_parser("preciser-cartes", help="Nommer la notion des cartes à la question imprécise")
+    cards.add_argument("ids", nargs="*", type=int, help="Numéros de cartes (par défaut : toutes)")
+    commands.add_parser("approuver-methodes", help="Rédiger et approuver les méthodes de mémorisation")
     write = commands.add_parser("rediger", help="Réécrire les énoncés en LaTeX avec le modèle local (Ollama)")
     write.add_argument("ids", nargs="*", type=int, help="Numéros d'exercices (par défaut : tous)")
     write.add_argument("--documents", nargs="*", type=int, help="Seulement ces documents")
@@ -242,6 +277,10 @@ def main() -> None:
         publish_command()
     elif args.command == "verifier":
         verify_command(args)
+    elif args.command == "preciser-cartes":
+        precise_cards_command(args)
+    elif args.command == "approuver-methodes":
+        approve_methods_command()
     elif args.command == "rediger":
         rewrite_command(args)
 

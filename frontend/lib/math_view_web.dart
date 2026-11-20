@@ -7,6 +7,15 @@ import 'package:web/web.dart' as web;
 import 'api_client.dart';
 import 'theme.dart';
 
+@JS('composeMath')
+external void _composeMathJs(web.HTMLElement root);
+
+void _composeMath(web.HTMLElement root) {
+  try {
+    _composeMathJs(root);
+  } catch (_) {}
+}
+
 /// Texte + formules : le serveur renvoie du HTML sûr (texte échappé + MathML) que le navigateur
 /// dessine nativement, sans connexion internet ni police à télécharger.
 class MathView extends StatefulWidget {
@@ -66,6 +75,7 @@ class _MathViewState extends State<MathView> {
     final html = _result?['html'];
     if (content == null || html is! String) return;
     content.innerHTML = html.toJS;
+    _composeMath(content); // KaTeX (web/index.html) ; le MathML reste si KaTeX est absent
   }
 
   static String _css(Color c) => 'rgb(${(c.r * 255).round()}, ${(c.g * 255).round()}, ${(c.b * 255).round()})';

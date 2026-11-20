@@ -8,6 +8,9 @@ Pour chaque exercice publié :
 Un exercice qui échoue est retiré de la publication (jamais supprimé) ; la raison est notée dans le journal.
 Un exercice déjà travaillé par un élève reste publié et est seulement signalé dans le rapport.
 
+Pour chaque carte mémoire publiée : question qui nomme la notion (jamais « p. 73 qui commence par … »), réponse
+lisible, classement et séries comme pour les exercices. Une carte qui échoue est retirée de la publication.
+
 Pour chaque document : pages extraites, exercices trouvés, exercices publiés, raison s'il n'apporte rien.
 """
 
@@ -19,7 +22,7 @@ from sqlalchemy.orm import Session
 
 from app.audit import record
 from app.classification import grade_has_tracks
-from app.models import Document, Exercise, ExerciseAttempt
+from app.models import Document, Exercise, ExerciseAttempt, Flashcard
 from app.publication import fingerprint, quality_problem
 
 
@@ -30,6 +33,23 @@ class VerificationReport:
     totals: Counter = field(default_factory=Counter)
 
 
+
+
+def card_problem(db: Session, card: Flashcard, cache: dict) -> str | None:
+    from app.flashcards import card_problem as content_problem
+
+    problem = content_problem(card.question, card.answer)
+    if problem:
+        return problem
+    if card.grade_id is None or card.subject_id is None:
+        return "niveau ou matière non reconnus"
+    if card.grade_id not in cache:
+        cache[card.grade_id] = grade_has_tracks(db, card.grade_id)
+    if cache[card.grade_id] and not card.tracks:
+        return "série non reconnue (séries jamais mélangées)"
+    if any(track.grade_id != card.grade_id for track in card.tracks):
+        return "série d'un autre niveau (mélange interdit)"
+    return None
 
 
 def exercise_problem(db: Session, exercise: Exercise, cache: dict) -> str | None:
@@ -73,6 +93,17 @@ def verify(db: Session, *, apply: bool = True, log=print) -> VerificationReport:
         if apply and not kept:
             exercise.is_published = False
             record(db, None, "verify", "exercise", exercise.id, problem=problem, decision="retiré de la publication")
+    for card in db.scalars(select(Flashcard).where(Flashcard.is_published.is_(True)).order_by(Flashcard.id)):
+        problem = card_problem(db, card, cache)
+        if problem is None:
+            report.totals["cartes vérifiées : conformes"] += 1
+            continue
+        report.totals[f"cartes retirées : {problem}"] += 1
+        report.exercises.append({"id": f"carte {card.id}", "document_id": card.document_id, "title": card.question,
+                                 "problem": problem, "action": "retiré"})
+        if apply:
+            card.is_published = False
+            record(db, None, "verify", "flashcard", card.id, problem=problem, decision="retirée de la publication")
     if apply:
         db.commit()
 

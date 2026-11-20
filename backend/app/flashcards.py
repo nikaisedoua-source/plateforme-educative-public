@@ -64,6 +64,23 @@ def _is_title(line: str) -> bool:
     return 0 < len(words) <= 8 and not line.rstrip().endswith((".", ",", ";")) and not re.search(r"\d{2,}", line)
 
 
+# Une question doit nommer la notion (« Énoncer la propriété de Thalès ») : l'élève ne connaît pas le document
+# par cœur, un renvoi à une page ou aux premiers mots du passage ne lui dit rien (retour utilisateur 2026-11-20).
+TO_SPECIFY = "À préciser"
+VAGUE = re.compile(r"\(p\.\s*\d+\)|qui commence par|^\s*" + TO_SPECIFY)
+
+
+def card_problem(question: str | None, answer: str | None) -> str | None:
+    """Raison de ne pas montrer une carte aux élèves (None : la carte peut être publiée)."""
+    from app.extraction import garbled
+
+    if VAGUE.search(question or ""):
+        return "question imprécise : la notion n'est pas nommée"
+    if garbled(answer or ""):
+        return "réponse illisible (texte du document mal lu)"
+    return None
+
+
 def _question(kind: str, title: str | None, body: str, page: int) -> str:
     article = KEYWORDS[kind][1]
     if title:
@@ -71,8 +88,8 @@ def _question(kind: str, title: str | None, body: str, page: int) -> str:
             return f"Définir : {title}"
         joiner = " " if re.match(r"(?i)(de|du|des|d['’])\b", title) else " : "
         return f"Énoncer {article}{joiner}{title}"
-    start = " ".join(body.split()[:6])
-    return f"Restituer {article} (p. {page}) qui commence par : « {start} … »"
+    # Pas d'intitulé dans le document : la notion sera nommée par `preciser` (jamais publiée avant).
+    return f"{TO_SPECIFY} : {article}"
 
 
 def propose(pages: list[tuple[int, str]]) -> list[Proposal]:

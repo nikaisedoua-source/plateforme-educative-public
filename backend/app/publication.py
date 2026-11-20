@@ -50,7 +50,9 @@ def blocking_reason(db: Session, item: Exercise | Flashcard, cache: dict | None 
         return "texte vide"
     if isinstance(item, Exercise):
         return quality_problem(item)
-    return None
+    from app.flashcards import card_problem
+
+    return card_problem(item.question, item.answer)
 
 
 MIN_LETTERS = 40
