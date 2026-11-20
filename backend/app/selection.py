@@ -253,7 +253,17 @@ def classify_document(db: Session, document_id: int, subject: str, grade: str, t
     return count
 
 
-HEADING = r"(?:EXERCICE|Exercice)[ \t]*(\d[\d ]*|)"
+# Tout intitulé qui annonce un exercice, en début de ligne (décision de l'utilisateur du 2026-11-20 : « là où c'est
+# écrit exercice, énoncé, devoir, exercices d'approfondissement, etc. »). Une « activité » seule est le plus souvent
+# une découverte de cours suivie de sa réponse : elle n'est pas proposée. Groupe 1 : le numéro, s'il y en a un.
+HEADING = (
+    r"(?im)^[ \t]*(?:exercices?\s+d['’]\s*(?:application|entra[iî]nement|renforcement|approfondissement|synth[eè]se)"
+    r"|exercices?|exo|probl[eè]mes?|[ée]nonc[ée]s?|devoirs?(?:\s+(?:surveill[ée]|de\s+maison|n[°o]))?"
+    r"|situations?\s+(?:d['’]\s*[ée]valuation|complexes?|probl[eè]mes?)"
+    r"|activit[ée]s?\s+d['’]\s*(?:application|[ée]valuation|int[ée]gration)|applications?"
+    r"|je\s+m['’]\s*(?:exerce|entra[iî]ne|[ée]value)|j['’]\s*approfondis|interrogations?(?:\s+[ée]crites?)?)"
+    r"(?![a-zà-ÿ])[ \t]*(?:n[°o]\s*)?(\d{1,3}(?:[ \t]\d)?|[IVX]{1,5}\b|)"
+)
 
 
 def propose_zones(document: Document, pattern: str = HEADING, margin: float = 0.055) -> list[dict]:
@@ -280,9 +290,10 @@ def propose_zones(document: Document, pattern: str = HEADING, margin: float = 0.
             textpage = page.get_textpage()
             text = textpage.get_text_range(0, textpage.count_chars())
             for match in heading.finditer(text):
-                box = textpage.get_charbox(match.start())
-                heads.append((number, 1 - box[3] / height, match.group(1).replace(" ", ""),
-                              " ".join(text[match.start():match.start() + 70].split())))
+                start = match.start() + len(match.group(0)) - len(match.group(0).lstrip())
+                box = textpage.get_charbox(start)
+                heads.append((number, 1 - box[3] / height, (match.group(1) or "").replace(" ", "").replace("\t", ""),
+                              " ".join(text[start:start + 70].split())))
             image = Image.open(io.BytesIO(extraction.render_pdf_page(path, number, dpi=60))).convert("L")
             w, h = image.size
             pixels = image.load()

@@ -55,3 +55,26 @@ def test_only_examined_and_kept_exercises_are_published(client: TestClient):
         rows = db.query(Exercise).filter_by(document_id=document["id"]).all()
         assert len(rows) == 2 and first_id in {e.id for e in rows}
         assert selection.kept_ids(db) == {first_id}
+
+
+def test_exercises_are_numbered_by_arrival_in_the_subject(client: TestClient):
+    from sqlalchemy import select as sql_select
+
+    from app.database import get_session_factory
+    from app.main import app
+    from app.numbering import label, numbers
+
+    session = app.dependency_overrides[get_session_factory]()
+    admin = _auth(create_user(client, role="admin", email="admin@example.com"))
+    refs = _chapter(client, admin)
+    document = _upload(client, admin, "fiche_demo.txt", DEMO_TXT.encode(), chapter_id=str(refs["chapter"]["id"]))
+    _extract(client, admin, document["id"])
+    client.post(f"/api/v1/library/documents/{document['id']}/segment", headers=admin)
+    with session() as db:
+        first, second = db.query(Exercise).filter_by(document_id=document["id"]).order_by(Exercise.id).all()
+        selection.decide(db, second, True, "retenu en premier DEMO")  # arrivé le premier sur le site
+        selection.decide(db, first, True, "retenu ensuite DEMO")
+        db.commit()
+        rank = numbers(db, sql_select(Exercise).where(Exercise.is_published.is_(True)))
+        assert rank == {second.id: 1, first.id: 2}
+        assert label(rank[second.id], second.title) == "Exercice 1"

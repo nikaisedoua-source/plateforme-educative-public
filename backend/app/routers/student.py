@@ -19,6 +19,7 @@ from app.assets import asset_response
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.grading import AUTO_TYPES, grade
+from app.numbering import label, numbers
 from app.spaced import record_exercise_result
 from app.models import (
     AppSetting, Chapter, CorrectionView, Document, Exercise, ExerciseAsset, ExerciseAttempt, ExerciseQuestion,
@@ -117,12 +118,18 @@ def correction_state(db: Session, exercise: Exercise, attempts: list[ExerciseAtt
     return succeeded or len(attempts) + len(answered) >= needed, label
 
 
-def _summary(db: Session, user: User, exercise: Exercise) -> dict:
+def _numbers(db: Session, user: User, subject_id: int | None) -> dict[int, int]:
+    """Numéros « Exercice 1…N » de la matière, dans l'ordre d'arrivée (voir app.numbering)."""
+    return numbers(db, visible_exercises(user).where(Exercise.subject_id == subject_id))
+
+
+def _summary(db: Session, user: User, exercise: Exercise, rank: dict[int, int] | None = None) -> dict:
+    rank = _numbers(db, user, exercise.subject_id) if rank is None else rank
     attempts = _attempts(db, user, exercise.id)
     counted = [a for a in attempts if not a.after_correction]
     best = max((a.score for a in counted), default=None)
     return {
-        "id": exercise.id, "title": exercise.title, "exercise_type": exercise.exercise_type,
+        "id": exercise.id, "title": label(rank.get(exercise.id), exercise.title), "exercise_type": exercise.exercise_type,
         "difficulty": exercise.difficulty, "points": exercise.points, "subject_id": exercise.subject_id,
         "chapter_id": exercise.chapter_id, "attempts": len(attempts),
         "best_score": best, "solved": any(a.result == "correct" for a in counted),
@@ -162,8 +169,10 @@ def my_exercises(
         query = query.where(Exercise.subject_id == subject_id)
     if chapter_id:
         query = query.where(Exercise.chapter_id == chapter_id)
-    exercises = db.scalars(query.order_by(Exercise.chapter_id, Exercise.sort_order, Exercise.id))
-    return [_summary(db, user, e) for e in exercises]
+    exercises = list(db.scalars(query))
+    ranks = {s: _numbers(db, user, s) for s in {e.subject_id for e in exercises}}
+    exercises.sort(key=lambda e: (e.subject_id or 0, ranks[e.subject_id].get(e.id, 10**9), e.id))
+    return [_summary(db, user, e, ranks[e.subject_id]) for e in exercises]
 
 
 @router.get("/exercises/{exercise_id}", response_model=StudentExercise)

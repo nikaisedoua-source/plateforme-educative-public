@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.grading import check_text
+from app.numbering import label, numbers
 from app.models import (
     Exercise, Flashcard, FlashcardReveal, MemoryMethod, RevisionReview, RevisionSchedule, Track, User,
 )
@@ -59,9 +60,9 @@ def _card_item(card: Flashcard, schedule: RevisionSchedule | None) -> dict:
     }
 
 
-def _exercise_item(exercise: Exercise, schedule: RevisionSchedule) -> dict:
+def _exercise_item(exercise: Exercise, schedule: RevisionSchedule, title: str | None = None) -> dict:
     return {
-        "item_type": "exercise", "item_id": exercise.id, "title": exercise.title, "card_type": None, "hint": None,
+        "item_type": "exercise", "item_id": exercise.id, "title": title or exercise.title, "card_type": None, "hint": None,
         "subject_id": exercise.subject_id, "chapter_id": exercise.chapter_id, "mastery": schedule.mastery,
         "due_at": schedule.due_at, "self_graded": False,
     }
@@ -82,12 +83,14 @@ def _items(db: Session, user: User, schedules: list[RevisionSchedule]) -> list[t
     cards = {c.id: c for c in db.scalars(visible_flashcards(user).where(Flashcard.id.in_(card_ids)))} if card_ids else {}
     exercises = {e.id: e for e in db.scalars(visible_exercises(user).where(Exercise.id.in_(exercise_ids)))} \
         if exercise_ids else {}
+    rank = numbers(db, visible_exercises(user)) if exercises else {}  # même « Exercice N » que dans Exercices
     items = []
     for schedule in schedules:
         if schedule.item_type == "flashcard" and schedule.item_id in cards:
             items.append((schedule, _card_item(cards[schedule.item_id], schedule)))
         elif schedule.item_type == "exercise" and schedule.item_id in exercises:
-            items.append((schedule, _exercise_item(exercises[schedule.item_id], schedule)))
+            exercise = exercises[schedule.item_id]
+            items.append((schedule, _exercise_item(exercise, schedule, label(rank.get(exercise.id), exercise.title))))
     return items
 
 
