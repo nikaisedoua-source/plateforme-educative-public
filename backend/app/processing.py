@@ -10,8 +10,11 @@ from sqlalchemy.orm import Session, sessionmaker
 from app import extraction, storage
 from app.audit import record
 from app.flashcards import create_proposals
-from app.models import Correction, Document, DocumentPage, Exercise, ExerciseAsset, ExerciseAttempt
+from app.models import Correction, Document, DocumentPage, Exercise, ExerciseAsset, ExerciseAttempt, Subject
 from app.publication import publish_document
+
+# Natures de document pouvant regrouper plusieurs épreuves (examen blanc, devoir commun).
+EXAM_KINDS = ("examen", "devoir")
 
 
 def run_extraction(document_id: int, factory: sessionmaker, actor_id: int | None) -> None:
@@ -226,7 +229,7 @@ def segment_document(
     db.flush()
 
     pages = [(p.page_number, p.text) for p in document.pages]
-    segments = extraction.segment(pages, all_corrections=document.kind == "corrige")
+    segments = extraction.segment(pages, all_corrections=document.kind == "corrige", exam=document.kind in EXAM_KINDS)
     exercise_segments = [s for s in segments if s.kind == "exercise" and s.label[:200] not in kept_titles]
     correction_segments = [s for s in segments if s.kind == "correction"]
     correction_source = document
@@ -234,7 +237,8 @@ def segment_document(
         correction_source = correction_document
         correction_segments = [
             s for s in extraction.segment(
-                [(p.page_number, p.text) for p in correction_document.pages], all_corrections=True
+                [(p.page_number, p.text) for p in correction_document.pages], all_corrections=True,
+                exam=document.kind in EXAM_KINDS,  # même découpage par épreuve que le sujet
             )
         ]
 
@@ -256,16 +260,27 @@ def segment_document(
         if seg.number:
             exercise_numbers[seg.number] = exercise_numbers.get(seg.number, 0) + 1
 
+    # Épreuve d'un examen à plusieurs matières : la rubrique (« DICTEE », « MATHEMATIQUES »…) donne la matière ;
+    # rubrique hors catalogue (EDHC…) : pas de matière, l'exercice reste non publié plutôt que mal rangé.
+    subject_ids = {name: subject_id for subject_id, name in db.execute(select(Subject.id, Subject.name))}
     created: list[tuple[Exercise, extraction.Segment]] = []
+    off_catalogue: list[str] = []  # épreuves dont la matière n'est pas au catalogue : notées, jamais mal rangées
     linked = 0
-    titles: dict[str, int] = {}
+    titles: dict[tuple, int] = {}
     for order, seg in enumerate(exercise_segments):
-        titles[seg.label] = titles.get(seg.label, 0) + 1
-        title = seg.label if titles[seg.label] == 1 else f"{seg.label} ({titles[seg.label]})"
+        own = dict(classification)
+        if seg.subject is not None:
+            own["subject_id"] = subject_ids.get(seg.subject)
+            if own["subject_id"] is None:
+                off_catalogue.append(f"{seg.label} (p. {seg.page_start})")
+                continue
+        title_key = (own["subject_id"], seg.label)
+        titles[title_key] = titles.get(title_key, 0) + 1
+        title = seg.label if titles[title_key] == 1 else f"{seg.label} ({titles[title_key]})"
         exercise = Exercise(
             document_id=document.id, page_start=seg.page_start, page_end=seg.page_end,
             source_number=seg.number, title=title[:200], original_text=seg.text, statement=seg.text,
-            exercise_type="libre", difficulty=2, status="extracted", sort_order=order, **classification,
+            exercise_type="libre", difficulty=2, status="extracted", sort_order=order, **own,
         )
         exercise.tracks = list(document.tracks)
         match = corrections_by_key.get(seg.key) if exercise_keys[seg.key] == 1 else None
@@ -286,6 +301,6 @@ def segment_document(
     db.flush()
     published = publish_document(db, document)
     record(db, actor_id, "segment", "document", document.id, exercises=len(created), corrections=linked, captures=figures,
-           flashcards=created_cards, publication=dict(published))
+           flashcards=created_cards, publication=dict(published), hors_catalogue=off_catalogue)
     db.commit()
     return len(created), linked

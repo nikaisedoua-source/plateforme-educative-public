@@ -22,13 +22,16 @@
     @media (prefers-color-scheme: dark) { body { background: #151A2E; } }
     math-field::part(menu-toggle) { display: none; }
   </style>
+</head>
+<body>
   <!-- MathLive (licence MIT), copié dans le projet : saisie des réponses mathématiques sans internet. -->
   <script src="mathlive/mathlive.min.js"></script>
   <script>
+    // Réglages appliqués une fois la page prête (MathLive a besoin de document.body).
     (function () {
       var M = window.MathfieldElement || (window.MathLive && window.MathLive.MathfieldElement);
       if (!M) return;
-      M.fontsDirectory = "mathlive/fonts/";
+      M.fontsDirectory = "fonts/"; // relatif au script mathlive.min.js
       M.soundsDirectory = null;
       M.keypressSound = null;
       M.plonkSound = null;
@@ -36,8 +39,6 @@
       M.decimalSeparator = ",";
     })();
   </script>
-</head>
-<body>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

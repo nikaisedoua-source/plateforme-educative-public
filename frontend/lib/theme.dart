@@ -111,7 +111,8 @@ class ChunkCard extends StatelessWidget {
         border: Border.all(color: p.border),
         boxShadow: [BoxShadow(color: p.shadow, blurRadius: 24, offset: const Offset(0, 8))],
       ),
-      child: child,
+      // Matériau transparent : les ListTile posés dans la carte gardent leur effet d'encre.
+      child: Material(type: MaterialType.transparency, child: child),
     );
   }
 }

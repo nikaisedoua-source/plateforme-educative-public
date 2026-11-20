@@ -38,6 +38,8 @@ from app.models import Correction, Document, Exercise, ExerciseQuestion
 MAX_QUESTIONS = 30
 MAX_IMAGE_WIDTH = 1100
 MAX_IMAGE_HEIGHT = 3200
+# À augmenter dès que le recadrage change : les images déjà servies aux élèves sont alors recalculées.
+CROP_VERSION = 3
 
 STATEMENT_PROMPT = """Tu recopies fidèlement un exercice scolaire à partir de l'image (programme ivoirien).
 Règles absolues :

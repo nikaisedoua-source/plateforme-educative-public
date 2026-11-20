@@ -278,9 +278,13 @@ EXERCISE_SECTION = re.compile(
     re.IGNORECASE,
 )
 CORRECTION_SECTION = re.compile(
-    r"^\s*(corrig[ée]s?|corrections?|solutions?|[ée]l[ée]ments\s+de\s+(?:correction|r[ée]ponse)|proposition\s+de\s+corrig[ée])\b",
+    r"^\s*(corrig[ée]s?|corrections?|solutions?|[ée]l[ée]ments\s+de\s+(?:correction|r[ée]ponse)|proposition\s+de\s+corrig[ée]"
+    r")\b|^\s*bar[eè]mes?\s*[:.]?\s*$",  # « Barème » seul ; « BAREME DICTEE 20/20 » : rubrique d'examen
     re.IGNORECASE,
 )
+# « Premier sujet : Dissertation », « Deuxième sujet » (sujets de BAC d'histoire-géographie, de philosophie).
+ORDINAL_SUBJECT = re.compile(r"^\s*(premier|deuxi[eè]me|second|troisi[eè]me)\s+sujet\b", re.IGNORECASE)
+ORDINALS = {"premier": 1, "deuxième": 2, "deuxieme": 2, "second": 2, "troisième": 3, "troisieme": 3}
 # Leçon / chapitre : la numérotation des exercices repart souvent à 1 dans chaque leçon.
 LESSON_HEADING = re.compile(
     r"^\s*(?P<word>le[cç]ons?|chapitres?|th[eè]mes?|s[ée]quences?|unit[ée]?|unit|module)\s*" + _NUMBER,
@@ -292,6 +296,77 @@ LOCAL_CORRECTION = re.compile(
     r"(?:\s*(?:n[°o]\s*)?(?:\d{1,3}|[IVX]{1,5}))?)?\s*[:.\-–—]?\s*$",
     re.IGNORECASE,
 )
+# Épreuves d'un examen ou d'un devoir qui en regroupe plusieurs (examen blanc de CM2 : dictée, éveil au milieu,
+# mathématiques, puis barème). Chaque rubrique : (motif, matière, intitulé de l'exercice qu'elle ouvre ou None).
+# Matière "" : rubrique connue sans matière au catalogue (EDHC, « Éveil au milieu » avant ses sous-parties) ;
+# les exercices qui en sortent restent non publiés plutôt que d'être rangés dans une autre matière.
+RUBRICS = [
+    (r"dict[ée]es?", "Français", "Dictée"),
+    (r"exploitation\s+de\s+texte|compr[ée]hension\s+(?:du|de|d['’]\s*un)\s+texte", "Français", "Compréhension du texte"),
+    (r"maniement\s+de\s+la\s+langue", "Français", "Maniement de la langue"),
+    (r"expression\s+[ée]crite|r[ée]daction", "Français", "Expression écrite"),
+    (r"fran[cç]ais", "Français", None),
+    (r"histoire\s*[-–]?\s*(?:et\s+)?g[ée]ographie|histoire|g[ée]ographie", "Histoire-Géographie", "Histoire-Géographie"),
+    (r"e\.?\s?d\.?\s?h\.?\s?c\.?", "", "EDHC"),
+    (r"sciences?\s+et\s+technologies?", "SVT", "Sciences et technologie"),
+    (r"svt|sciences\s+de\s+la\s+vie(?:\s+et\s+de\s+la\s+terre)?", "SVT", None),
+    (r"physique\s*[-–]?\s*(?:et\s+)?chimie|sciences\s+physiques", "Physique-Chimie", None),
+    (r"sciences?", "SVT", None),  # « SCIENCES » d'un sujet de primaire (après « sciences physiques » ci-dessus)
+    (r"math[ée]m[ae]tiques?|maths?", "Mathématiques", None),  # « MATHEMETIQUES » : coquille rencontrée
+    (r"anglais", "Anglais", None),
+    (r"allemand", "Allemand", None),
+    (r"philosophie", "Philosophie", None),
+    (r"[ée]veil\s+au\s+milieu", "", None),
+]
+RUBRIC_HEADINGS = {heading for _, _, heading in RUBRICS if heading}
+# Rubriques qui n'ouvrent un exercice que numérotées (« I- HISTOIRE-GEOGRAPHIE ») : sans numéro, c'est le titre de
+# l'épreuve (« HISTOIRE-GÉOGRAPHIE » en tête d'un sujet de BAC) et seule la matière est retenue.
+NUMBERED_RUBRICS = {"Histoire-Géographie", "EDHC", "Sciences et technologie"}
+RUBRIC_LINE = re.compile(
+    r"^\s*(?:partie\s+[a-z0-9]{1,2}\s*[-–—:.]\s*)?(?P<numeral>(?:[IVX]{1,4}|\d{1,2})\s*[-–.)]\s*)?(?P<bareme>bar[eè]mes?\s+(?:de\s+(?:l['’]\s*)?)?)?"
+    r"(?:(?:[ée]preuves?|compositions?|devoirs?)\s+(?:de\s+|d['’]\s*)?)?"
+    r"(?P<name>" + "|".join(f"(?:{pattern})" for pattern, _, _ in RUBRICS) + r")"
+    r"(?:\s*[:–—·-]\s*[^\d()/:·]{2,40}?)?"  # « FRANÇAIS : ORTHOGRAPHE »
+    r"(?:\s*[·•|]?\s+(?:\d{1,2}|cm\s?[12]|ce\s?[12]|cp\s?[12]?|\d+\s*/\s*\d+|/\s*\d+(?:\s*(?:points?|pts?))?|\(.{0,30}\)|\d+\s*pts?|\d+\s*points?))*\s*[:.]?\s*$",
+    re.IGNORECASE,
+)
+
+
+# Cartouche d'une copie d'examen : jamais le début d'un texte support.
+EXAM_FORM_LINE = re.compile(
+    r"(?i)observation|appr[ée]ciation|correcteur|\bvisa\b|nom\s+et\s+pr[ée]noms?|secteur|n[o°]\s*de\s+table|\bdate\b|"
+    r"\bnote\b|direction|examen|\bdur[ée]e\b|\d+\s*h\s*\d*\s*mn|[.…]{4,}"
+)
+
+
+def _support_text(lines: list[str]) -> list[str]:
+    """Texte support placé avant une rubrique (« lis le texte et traite les consignes ») : à partir de la première
+    vraie ligne de texte, sans le cartouche de la copie."""
+    for index, line in enumerate(lines):
+        if len(line.strip()) >= 40 and not EXAM_FORM_LINE.search(line):
+            return lines[index:]
+    return []
+
+
+def rubric(line: str) -> tuple[bool, str, str | None] | None:
+    """Rubrique d'épreuve sur une ligne courte en majuscules : (barème ?, matière, intitulé ou None)."""
+    stripped = line.strip()
+    # « (20 points) », « / 20 points » peuvent être en minuscules
+    letters = [c for c in re.sub(r"\(.*?\)|\b(?:points?|pts?)\b", "", stripped) if c.isalpha()]
+    if not letters or len(stripped) > 70 or "".join(letters).upper() != "".join(letters):
+        return None
+    found = RUBRIC_LINE.match(stripped)
+    if not found:
+        return None
+    name = found.group("name")
+    for pattern, subject, heading in RUBRICS:
+        if re.fullmatch(pattern, name, re.IGNORECASE):
+            if heading in NUMBERED_RUBRICS and not found.group("numeral"):
+                heading = None
+            return bool(found.group("bareme")), subject, heading
+    return None
+
+
 MIN_BODY_CHARS = 15  # en dessous (sommaire, renvoi), le bloc est ignoré
 
 
@@ -304,6 +379,7 @@ class Segment:
     page_end: int
     lines: list[str] = field(default_factory=list)
     section: str | None = None  # « Leçon 2 », « Chapitre III »…
+    subject: str | None = None  # épreuve d'un examen à plusieurs matières ("" : matière hors catalogue)
 
     @property
     def text(self) -> str:
@@ -316,14 +392,15 @@ class Segment:
     @property
     def label(self) -> str:
         word = self.heading.strip()
-        word = word[:1].upper() + word[1:].lower() if word else "Exercice"
+        if word not in RUBRIC_HEADINGS:  # « EXERCICE » → « Exercice » ; « EDHC », « Dictée » restent tels quels
+            word = word[:1].upper() + word[1:].lower() if word else "Exercice"
         base = f"{word} {self.number}" if self.number else word
         return f"{self.section} — {base}" if self.section else base
 
     @property
     def key(self) -> tuple[str | None, str]:
         """Clé d'association exercice ↔ corrigé."""
-        return (self.section, self.number or self.heading.lower())
+        return (self.section, self.subject, self.number or self.heading.lower())
 
 
 def normalize_number(raw: str) -> str:
@@ -338,13 +415,16 @@ def normalize_number(raw: str) -> str:
     return str(total)
 
 
-def segment(pages: list[tuple[int, str]], all_corrections: bool = False) -> list[Segment]:
+def segment(pages: list[tuple[int, str]], all_corrections: bool = False, exam: bool = False) -> list[Segment]:
     """Découpe tout le document (jusqu'à la dernière page) en exercices et corrigés.
 
     - « Exercice N », « Application N », « Situation d'évaluation », « Je m'exerce »… ouvrent un exercice ;
     - « Leçon N » / « Chapitre N » fixe la section courante (numérotation propre à chaque leçon) ;
     - après « Corrigé »/« Correction », les blocs sont des corrigés jusqu'à la leçon suivante ;
-    - `all_corrections` : document entièrement corrigé (livre du professeur, corrigé d'un cahier)."""
+    - `all_corrections` : document entièrement corrigé (livre du professeur, corrigé d'un cahier) ;
+    - `exam` : examen ou devoir pouvant regrouper plusieurs épreuves ; une rubrique en majuscules
+      (« DICTEE », « MATHEMATIQUES », « II- EDHC », « BAREME … ») fixe la matière des exercices qui suivent,
+      ouvre l'exercice d'une épreuve sans numéro, et « BAREME » ouvre les corrigés."""
     segments: list[Segment] = []
     current: Segment | None = None
     in_corrections = all_corrections
@@ -352,6 +432,9 @@ def segment(pages: list[tuple[int, str]], all_corrections: bool = False) -> list
     local_pending = False
     part = 1
     last_number: dict[str, int] = {}
+    subject: str | None = None
+    support_page = 0
+    orphans: list[str] = []  # lignes hors de tout exercice depuis le dernier titre (texte support d'une épreuve)
 
     def section_label() -> str | None:
         if part == 1:
@@ -359,7 +442,8 @@ def segment(pages: list[tuple[int, str]], all_corrections: bool = False) -> list
         return f"{section} · partie {part}" if section else f"Partie {part}"
 
     def close() -> None:
-        nonlocal current
+        nonlocal current, orphans
+        orphans = []
         if current is not None:
             segments.append(current)
             current = None
@@ -376,7 +460,35 @@ def segment(pages: list[tuple[int, str]], all_corrections: bool = False) -> list
                 in_corrections = all_corrections
                 part, last_number = 1, {}
                 continue
-            numbered = EXERCISE_HEADING.match(stripped)
+            heading_rubric = rubric(stripped) if exam else None
+            if heading_rubric:
+                bareme, rubric_subject, rubric_heading = heading_rubric
+                local_pending = False
+                pending = orphans if current is None else []
+                # Un simple en-tête de matière ne coupe l'exercice en cours que si la matière change.
+                if rubric_heading or bareme or (subject is not None and rubric_subject != subject):
+                    close()
+                if bareme:
+                    in_corrections = True
+                if rubric_subject != subject:
+                    part, last_number = 1, {}
+                subject = rubric_subject
+                if rubric_heading:
+                    support = _support_text(pending) if not in_corrections else []
+                    current = Segment(
+                        kind="correction" if in_corrections else "exercise", number=None, heading=rubric_heading,
+                        page_start=support_page if support else page_number, page_end=page_number,
+                        lines=[line.strip() for line in support] + [stripped] if support else [stripped],
+                        section=section_label(), subject=subject,
+                    )
+                elif current is None:
+                    orphans = pending  # simple en-tête de matière : le texte support peut le précéder
+                continue
+            ordinal = ORDINAL_SUBJECT.match(stripped)
+            numbered = EXERCISE_HEADING.match(
+                ORDINAL_SUBJECT.sub(f"Sujet {ORDINALS.get(ordinal.group(1).lower(), 1)}", stripped, count=1)
+                if ordinal else stripped
+            )
             if (LOCAL_CORRECTION.match(stripped) and current is not None and current.kind == "exercise"
                     and not in_corrections):
                 owner = current
@@ -384,7 +496,7 @@ def segment(pages: list[tuple[int, str]], all_corrections: bool = False) -> list
                 local_pending = True
                 current = Segment(
                     kind="correction", number=owner.number, heading=owner.heading, page_start=page_number,
-                    page_end=page_number, lines=[stripped], section=owner.section,
+                    page_end=page_number, lines=[stripped], section=owner.section, subject=owner.subject,
                 )
                 continue
             if CORRECTION_SECTION.match(stripped) and not numbered and len(stripped) <= 80:
@@ -414,12 +526,17 @@ def segment(pages: list[tuple[int, str]], all_corrections: bool = False) -> list
                     page_end=page_number,
                     lines=[stripped],
                     section=section_label(),
+                    subject=subject,
                 )
                 continue
             if current is not None:
                 current.lines.append(line)
                 if stripped:
                     current.page_end = page_number
+            elif exam and stripped:
+                if not orphans:
+                    support_page = page_number
+                orphans.append(line)
     close()
     return [s for s in segments if s.body_chars >= MIN_BODY_CHARS or (s.kind == "correction" and s.body_chars > 0)]
 

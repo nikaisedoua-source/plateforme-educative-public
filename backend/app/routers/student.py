@@ -307,10 +307,11 @@ def answer_question(question_id: int, payload: QuestionAttemptIn, db: Session = 
 @router.get("/exercises/{exercise_id}/original.png")
 def original(exercise_id: int, db: Session = Depends(get_db), user: User = Depends(require_student)):
     """Image de la zone du document où se trouve l'exercice (fidèle à l'original)."""
-    from app.rewrite import _first_line, _siblings, region_image
+    from app.rewrite import CROP_VERSION, _first_line, _siblings, region_image
 
     exercise = _exercise(db, user, exercise_id)
-    cached = storage.cache_path("originals", str(exercise.document_id), f"{exercise.id}.png")
+    name = f"{exercise.id}-p{exercise.page_start}-{exercise.page_end}-v{CROP_VERSION}.png"
+    cached = storage.cache_path("originals", str(exercise.document_id), name)
     if not cached.exists():
         document = db.get(Document, exercise.document_id)
         try:

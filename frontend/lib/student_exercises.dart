@@ -193,7 +193,9 @@ class _StudentExerciseListState extends State<StudentExerciseList> {
             .push(MaterialPageRoute<void>(
               builder: (_) => StudentExercisePage(api: widget.api, exerciseId: item['id'] as int),
             ))
-            .then((_) => setState(() => _items = _load())),
+            .then((_) {
+              if (mounted) setState(() { _items = _load(); });
+            }),
       ),
     );
   }

@@ -217,3 +217,36 @@ def test_quality_problem(statement, problem):
         assert found is None
     else:
         assert found and found.startswith(problem)
+
+
+def test_exam_rubrics_split_subjects_and_bareme():
+    from app.extraction import rubric, segment
+
+    assert rubric("MATHEMATIQUES") == (False, "Mathématiques", None)
+    assert rubric("II- EDHC") == (False, "", "EDHC")
+    assert rubric("BAREME EPREUVE DE MATHEMATIQUE CM2 50/50") == (True, "Mathématiques", None)
+    assert rubric("3- SCIENCES ET TECHNOLOGIE 30/30") == (False, "SVT", "Sciences et technologie")
+    assert rubric("Mathématiques") is None  # en-tête courant d'un manuel : ignoré
+    pages = [
+        (1, "EXAMEN BLANC\nNom et Prénoms : ……………\n« Lis le texte ci-dessous et traite les consignes. »\n"
+            "Le travail des enfants est interdit par la loi dans tous les pays du monde.\n"
+            "I - COMPREHENSION DU TEXTE\n1- Donne une définition du travail des enfants selon le texte."),
+        (2, "DICTEE\nDictée : …………………………………………………………………\nÉcris le texte que le maître va te lire."),
+        (3, "MATHEMATIQUES\nEXERCICE 1 :\nCalcule 2,98 + 48,571 et pose l'opération.\n"
+            "EXERCICE 2 :\nObserve la figure et complète les phrases."),
+        (4, "BAREME EPREUVE DE MATHEMATIQUE CM2 50/50\nEXERCICE 1 :\n2,98 + 48,571 = 51,551 (4 pts)\n"
+            "EXERCICE 2 :\n(AH) est la hauteur du triangle ABC."),
+    ]
+    found = [(s.kind, s.subject, s.label) for s in segment(pages, exam=True)]
+    assert found == [
+        ("exercise", "Français", "Compréhension du texte"),
+        ("exercise", "Français", "Dictée"),
+        ("exercise", "Mathématiques", "Exercice 1"),
+        ("exercise", "Mathématiques", "Exercice 2"),
+        ("correction", "Mathématiques", "Exercice 1"),
+        ("correction", "Mathématiques", "Exercice 2"),
+    ]
+    first = segment(pages, exam=True)[0]
+    assert first.text.startswith("« Lis le texte") and first.page_start == 1
+    # Sans le mode examen, rien ne change pour les manuels.
+    assert all(s.subject is None for s in segment(pages))
