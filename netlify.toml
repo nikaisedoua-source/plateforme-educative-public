@@ -1,0 +1,6 @@
+# Relais de secours (même rôle que vercel.json) : tout est transmis au serveur.
+[[redirects]]
+  from = "/*"
+  to = "https://plateforme-educative-api.onrender.com/:splat"
+  status = 200
+  force = true
