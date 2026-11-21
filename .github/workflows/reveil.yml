@@ -1,0 +1,20 @@
+# Réveil du serveur du site (offre gratuite de Render, qui s'endort après 15 min sans visite).
+# Décision du propriétaire (2026-11-21) : « Réveil gratuit auto ». Une requête GET /health toutes les 10 minutes,
+# rien d'autre : ni secret, ni donnée. Un service allumé tout le mois tient dans les 750 h gratuites de Render.
+# GitHub peut retarder ou sauter un passage planifié quand il est chargé : le site patiente alors au réveil.
+name: Réveil du serveur
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+permissions: {}
+jobs:
+  reveil:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Appeler /health
+        run: |
+          curl -sS -o /dev/null -w "HTTP %{http_code} en %{time_total} s\n" \
+            --max-time 150 --retry 3 --retry-delay 10 --retry-all-errors \
+            https://plateforme-educative-api.onrender.com/health
