@@ -1,20 +1,30 @@
 # Réveil du serveur du site (offre gratuite de Render, qui s'endort après 15 min sans visite).
-# Décision du propriétaire (2026-11-21) : « Réveil gratuit auto ». Une requête GET /health toutes les 10 minutes,
-# rien d'autre : ni secret, ni donnée. Un service allumé tout le mois tient dans les 750 h gratuites de Render.
-# GitHub peut retarder ou sauter un passage planifié quand il est chargé : le site patiente alors au réveil.
+# Décision du propriétaire (2026-11-21) : « Réveil gratuit auto » ; (2026-11-22) « Oui, applique » : réveil fiable.
+# GitHub saute la plupart des passages planifiés (5 passages en 24 h au lieu de 144 le 2026-11-22) : chaque passage
+# reste donc allumé près de 6 h et appelle GET /health toutes les 9 minutes, rien d'autre (ni secret, ni donnée).
+# Un passage par heure est demandé ; « concurrency » garde un seul passage en cours et un seul en attente, qui prend
+# le relais dès que le premier s'arrête. Dépôt public : minutes gratuites. Un service allumé tout le mois tient dans
+# les 750 h gratuites de Render.
 name: Réveil du serveur
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "17 * * * *"
   workflow_dispatch:
 permissions: {}
+concurrency:
+  group: reveil
+  cancel-in-progress: false
 jobs:
   reveil:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 355
     steps:
-      - name: Appeler /health
+      - name: Appeler /health toutes les 9 minutes pendant près de 6 h
         run: |
-          curl -sS -o /dev/null -w "HTTP %{http_code} en %{time_total} s\n" \
-            --max-time 150 --retry 3 --retry-delay 10 --retry-all-errors \
-            https://plateforme-educative-api.onrender.com/health
+          fin=$(( $(date +%s) + 345 * 60 ))
+          while [ "$(date +%s)" -lt "$fin" ]; do
+            curl -sS -o /dev/null -w "$(date -u +%H:%M) HTTP %{http_code} en %{time_total} s\n" \
+              --max-time 150 --retry 3 --retry-delay 10 --retry-all-errors \
+              https://plateforme-educative-api.onrender.com/health || echo "$(date -u +%H:%M) pas de réponse"
+            sleep 540
+          done
