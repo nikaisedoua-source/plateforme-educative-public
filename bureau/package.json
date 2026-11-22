@@ -1,0 +1,100 @@
+{
+  "name": "plateforme-educative",
+  "productName": "Plateforme educative",
+  "version": "1.0.0",
+  "description": "Application de bureau de la plateforme éducative (ouvre le site en ligne)",
+  "homepage": "https://nikaisedoua-source.github.io/plateforme-educative-public/",
+  "author": "Plateforme éducative",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "construire": "electron-builder --publish never"
+  },
+  "devDependencies": {
+    "electron": "45.2.3",
+    "electron-builder": "26.17.0"
+  },
+  "build": {
+    "appId": "io.github.nikaisedoua-source.plateforme-educative",
+    "productName": "Plateforme educative",
+    "copyright": "Plateforme éducative",
+    "files": [
+      "main.js",
+      "hors-ligne.html",
+      "icone.png"
+    ],
+    "icon": "icone.png",
+    "publish": null,
+    "directories": {
+      "output": "dist"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "category": "public.app-category.education",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "artifactName": "Plateforme-educative-Mac-${arch}.${ext}",
+      "extendInfo": {
+        "CFBundleDisplayName": "Plateforme éducative"
+      }
+    },
+    "dmg": {
+      "title": "Plateforme éducative"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Plateforme-educative-Windows.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "shortcutName": "Plateforme éducative",
+      "uninstallDisplayName": "Plateforme éducative"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Education",
+      "executableName": "plateforme-educative",
+      "maintainer": "Plateforme éducative <nikaisedoua-source@users.noreply.github.com>",
+      "synopsis": "Plateforme éducative",
+      "artifactName": "Plateforme-educative-Linux.${ext}",
+      "desktop": {
+        "entry": {
+          "Name": "Plateforme éducative",
+          "Comment": "Plateforme éducative : cours, exercices et labos"
+        }
+      }
+    }
+  }
+}
