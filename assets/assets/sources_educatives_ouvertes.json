@@ -1,0 +1,1503 @@
+{
+  "title": "Répertoire local de ressources libres en français et multilingues",
+  "status": "local_only_not_imported",
+  "selection_rule": "Sources mondiales utilisables par des francophones. Priorité aux contenus en français et aux licences autorisant réutilisation/traduction/adaptation; pour les catalogues à licences mixtes, seule une ressource dont la licence a été vérifiée individuellement peut être importée. Gratuit à consulter ne signifie pas libre à copier. Les programmes de France, du Québec, du Sénégal et d’autres pays francophones servent de références comparatives; un document consultable sans licence explicite reste une référence, pas une source à recopier.",
+  "resources": [
+    {
+      "id": "dpfc-primaire",
+      "title": "Programmes et guides DPFC — primaire",
+      "provider": "Direction de la Pédagogie et de la Formation Continue, Côte d’Ivoire",
+      "subjects": [
+        "Mathématiques",
+        "Français",
+        "Sciences",
+        "Histoire-géographie",
+        "Éducation artistique",
+        "Éducation civique"
+      ],
+      "levels": "CP1 à CM2",
+      "formats": [
+        "programmes PDF",
+        "guides pédagogiques",
+        "progressions"
+      ],
+      "license": "Référence officielle consultable; licence de réutilisation non explicitée sur la page",
+      "reuse": "Utiliser pour vérifier le programme et renvoyer à la source. Ne pas recopier les documents avant validation des droits.",
+      "url": "https://dpfc-ci.net/documents/programmes-educatifs-et-guides-dexecution/programmes-educatifs-et-guides-dexecution-du-primaire/",
+      "status": "consultation_et_cadrage",
+      "languages": [
+        "français"
+      ],
+      "country": "Côte d’Ivoire"
+    },
+    {
+      "id": "dpfc-secondaire",
+      "title": "Programmes et guides DPFC — secondaire",
+      "provider": "Direction de la Pédagogie et de la Formation Continue, Côte d’Ivoire",
+      "subjects": [
+        "Mathématiques",
+        "Français",
+        "Sciences physiques",
+        "SVT",
+        "Histoire-géographie",
+        "Philosophie",
+        "Langues",
+        "Arts",
+        "Informatique"
+      ],
+      "levels": "6e à Terminale",
+      "formats": [
+        "programmes PDF",
+        "guides pédagogiques",
+        "banques de situations"
+      ],
+      "license": "Référence officielle consultable; licence de réutilisation non explicitée sur la page",
+      "reuse": "Cadrage curriculaire et liens vers les documents. Vérifier les droits avant extraction ou republication.",
+      "url": "https://dpfc-ci.net/documents/programmes-educatifs-et-guides-dexecution/programmes-educatifs-et-guides-dexecution-du-secondaire/",
+      "status": "consultation_et_cadrage",
+      "languages": [
+        "français"
+      ],
+      "country": "Côte d’Ivoire"
+    },
+    {
+      "id": "openstax",
+      "title": "OpenStax — manuels ouverts",
+      "provider": "Rice University",
+      "subjects": [
+        "Mathématiques",
+        "Biologie",
+        "Physique",
+        "Chimie",
+        "Informatique",
+        "Économie",
+        "Gestion",
+        "Sciences sociales",
+        "Humanités"
+      ],
+      "levels": "Secondaire supérieur et enseignement supérieur selon le titre",
+      "formats": [
+        "manuels web",
+        "PDF",
+        "exercices et exemples"
+      ],
+      "license": "CC BY-NC-SA 4.0 pour le contenu des manuels OpenStax; crédits/éléments tiers à vérifier par titre.",
+      "reuse": "Adaptation autorisée pour usage non commercial avec attribution et partage à l’identique. La licence OpenStax interdit l’ingestion de ses contenus dans des LLM ou outils génératifs sans autorisation préalable; utiliser ces documents comme liens de consultation ou selon autorisation.",
+      "url": "https://openstax.org/subjects",
+      "status": "ouvert_non_commercial_CC_BY_NC_SA_4_0_sans_ingestion_IA",
+      "languages": [
+        "anglais, certains titres en espagnol; traduction française à créer si licence le permet"
+      ],
+      "country": "États-Unis, manuels internationaux"
+    },
+    {
+      "id": "open-textbook-library",
+      "title": "Open Textbook Library",
+      "provider": "University of Minnesota",
+      "subjects": [
+        "Mathématiques",
+        "Sciences",
+        "Informatique",
+        "Économie",
+        "Gestion",
+        "Droit",
+        "Langues",
+        "Sciences humaines"
+      ],
+      "levels": "Supérieur; quelques ouvrages de niveau secondaire",
+      "formats": [
+        "manuels numériques",
+        "PDF"
+      ],
+      "license": "Licence ouverte indiquée par ouvrage; elle varie selon le titre.",
+      "reuse": "Choisir uniquement les notices portant une licence ouverte explicite; respecter attribution, partage à l’identique et restriction commerciale le cas échéant.",
+      "url": "https://open.umn.edu/opentextbooks",
+      "status": "ouvert_sous_condition_par_titre",
+      "languages": [
+        "anglais majoritairement; autres langues selon le titre"
+      ],
+      "country": "États-Unis, catalogue international"
+    },
+    {
+      "id": "libretexts",
+      "title": "LibreTexts Libraries",
+      "provider": "LibreTexts",
+      "subjects": [
+        "Mathématiques",
+        "Biologie",
+        "Chimie",
+        "Physique",
+        "Informatique",
+        "Économie",
+        "Gestion",
+        "Sciences humaines",
+        "Langues"
+      ],
+      "levels": "Secondaire supérieur et supérieur selon les bibliothèques",
+      "formats": [
+        "chapitres web",
+        "manuels",
+        "exercices"
+      ],
+      "license": "Licence et droits des figures propres à chaque page ou livre; beaucoup de contenus sont CC, mais pas tous.",
+      "reuse": "Vérifier les informations de licence dans chaque livre et sous chaque figure; retenir uniquement les éléments réutilisables.",
+      "url": "https://libretexts.org/",
+      "status": "ouvert_sous_condition_par_page",
+      "languages": [
+        "anglais majoritairement; vérifier la langue par livre"
+      ],
+      "country": "États-Unis, bibliothèque internationale"
+    },
+    {
+      "id": "siyavula",
+      "title": "Siyavula — manuels de mathématiques et sciences",
+      "provider": "Siyavula Education",
+      "subjects": [
+        "Mathématiques",
+        "Sciences physiques"
+      ],
+      "levels": "JSS et classes secondaires, selon le programme du pays",
+      "formats": [
+        "manuels web",
+        "PDF",
+        "exercices interactifs"
+      ],
+      "license": "Les versions non brandées peuvent être CC BY; certaines versions brandées sont CC BY-ND. La licence est indiquée par fichier.",
+      "reuse": "Télécharger uniquement la version CC BY si adaptation souhaitée; attribuer Siyavula et vérifier l’alignement avant usage en Côte d’Ivoire.",
+      "url": "https://ng.siyavula.com/read",
+      "status": "ouvert_sous_condition_par_version",
+      "languages": [
+        "anglais principalement; vérifier le manuel par pays"
+      ],
+      "country": "Afrique du Sud"
+    },
+    {
+      "id": "phet",
+      "title": "PhET Interactive Simulations",
+      "provider": "University of Colorado Boulder",
+      "subjects": [
+        "Mathématiques",
+        "Physique",
+        "Chimie",
+        "Biologie",
+        "Sciences de la Terre"
+      ],
+      "levels": "Primaire à supérieur selon la simulation",
+      "formats": [
+        "simulations interactives",
+        "activités"
+      ],
+      "license": "Simulations HTML régulières CC BY-NC 4.0; l’usage commercial est exclu et la marque/logo doit rester visible.",
+      "reuse": "Usage gratuit non commercial; attribution près du contenu; vérifier séparément les activités et PhET-iO.",
+      "url": "https://phet.colorado.edu/fr/",
+      "status": "ouvert_non_commercial",
+      "languages": [
+        "interface et simulations multilingues dont français"
+      ],
+      "country": "États-Unis, simulations multilingues"
+    },
+    {
+      "id": "mit-ocw",
+      "title": "MIT OpenCourseWare",
+      "provider": "Massachusetts Institute of Technology",
+      "subjects": [
+        "Mathématiques",
+        "Informatique",
+        "Sciences",
+        "Ingénierie",
+        "Économie",
+        "Gestion",
+        "Humanités",
+        "Arts",
+        "Langues"
+      ],
+      "levels": "Supérieur",
+      "formats": [
+        "cours",
+        "notes",
+        "problèmes",
+        "examens",
+        "vidéos"
+      ],
+      "license": "CC BY-NC-SA 4.0 pour les contenus couverts; certains éléments tiers sont exclus et signalés.",
+      "reuse": "Attribution, usage non commercial et partage à l’identique pour les adaptations; vérifier les exclusions et notices des éléments tiers.",
+      "url": "https://ocw.mit.edu/",
+      "status": "ouvert_non_commercial",
+      "languages": [
+        "anglais principalement"
+      ],
+      "country": "États-Unis"
+    },
+    {
+      "id": "cs-unplugged",
+      "title": "CS Unplugged",
+      "provider": "University of Canterbury / CS Education Research Group",
+      "subjects": [
+        "Informatique",
+        "Algorithmique",
+        "Mathématiques"
+      ],
+      "levels": "Primaire et secondaire",
+      "formats": [
+        "activités débranchées",
+        "fiches",
+        "vidéos"
+      ],
+      "license": "CC BY-NC-SA 4.0 pour le contenu du site classique.",
+      "reuse": "Attribuer, préciser les modifications, usage non commercial et partage des adaptations sous licence compatible.",
+      "url": "https://www.csunplugged.org/fr/",
+      "status": "ouvert_non_commercial",
+      "languages": [
+        "anglais, certaines ressources traduites en français"
+      ],
+      "country": "Nouvelle-Zélande, ressources traduites"
+    },
+    {
+      "id": "african-storybook",
+      "title": "African Storybook",
+      "provider": "South African Institute for Distance Education (Saide)",
+      "subjects": [
+        "Français et autres langues selon traduction",
+        "Lecture",
+        "Littérature",
+        "Éducation civique"
+      ],
+      "levels": "Petite enfance et primaire",
+      "formats": [
+        "livres illustrés numériques",
+        "traductions",
+        "outils de création"
+      ],
+      "license": "La licence est indiquée sur chaque livre; les livres ouverts sont souvent CC BY 4.0.",
+      "reuse": "Vérifier la notice du livre, attribuer auteur/traducteur et licence; ne pas supposer que chaque illustration est réutilisable hors du livre.",
+      "url": "https://www.africanstorybook.org/",
+      "status": "ouvert_sous_condition_par_livre",
+      "languages": [
+        "français et langues africaines selon chaque histoire"
+      ],
+      "country": "Afrique australe et pays partenaires"
+    },
+    {
+      "id": "wikibooks",
+      "title": "Wikibooks",
+      "provider": "Wikimedia Foundation et contributeurs",
+      "subjects": [
+        "Mathématiques",
+        "Sciences",
+        "Informatique",
+        "Langues",
+        "Littérature",
+        "Histoire",
+        "Arts"
+      ],
+      "levels": "Tous niveaux; qualité et progression variables",
+      "formats": [
+        "manuels collaboratifs",
+        "chapitres web"
+      ],
+      "license": "CC BY-SA et/ou GFDL selon le contenu; médias intégrés avec leurs propres licences.",
+      "reuse": "Vérifier la licence de chaque page et média, attribuer les contributeurs, conserver la licence compatible et les historiques requis.",
+      "url": "https://www.wikibooks.org/",
+      "status": "ouvert_sous_condition_par_page",
+      "languages": [
+        "portail français; les autres éditions linguistiques sont séparées"
+      ],
+      "country": "International, éditions multilingues"
+    },
+    {
+      "id": "commons",
+      "title": "Wikimedia Commons",
+      "provider": "Wikimedia Foundation et contributeurs",
+      "subjects": [
+        "Toutes matières — images, cartes, sons et vidéos"
+      ],
+      "levels": "Tous niveaux",
+      "formats": [
+        "médias éducatifs"
+      ],
+      "license": "Domaine public ou licence ouverte variable par fichier.",
+      "reuse": "Ouvrir la page de chaque fichier; vérifier auteur, licence, attribution, restrictions et droit à l’image avant intégration.",
+      "url": "https://commons.wikimedia.org/",
+      "status": "ouvert_sous_condition_par_fichier",
+      "languages": [
+        "médias sans langue ou multilingues; vérifier chaque fichier"
+      ],
+      "country": "International, médias multilingues"
+    },
+    {
+      "id": "doab",
+      "title": "Directory of Open Access Books (DOAB)",
+      "provider": "DOAB Foundation",
+      "subjects": [
+        "Sciences",
+        "Sciences humaines",
+        "Langues",
+        "Histoire",
+        "Économie",
+        "Gestion"
+      ],
+      "levels": "Surtout supérieur",
+      "formats": [
+        "livres numériques en accès ouvert"
+      ],
+      "license": "Ouvrages évalués et publiés en accès ouvert; licence définie individuellement par titre.",
+      "reuse": "Télécharger depuis l’éditeur lié et appliquer la licence de l’ouvrage; l’accès ouvert ne signifie pas automatiquement CC BY.",
+      "url": "https://www.doabooks.org/",
+      "status": "ouvert_sous_condition_par_titre",
+      "languages": [
+        "multilingue dont français selon l’ouvrage"
+      ],
+      "country": "International"
+    },
+    {
+      "id": "oapen",
+      "title": "OAPEN Library",
+      "provider": "OAPEN Foundation",
+      "subjects": [
+        "Sciences humaines",
+        "Sciences sociales",
+        "Économie",
+        "Gestion",
+        "Histoire",
+        "Langues"
+      ],
+      "levels": "Supérieur",
+      "formats": [
+        "livres numériques en accès ouvert"
+      ],
+      "license": "Licence indiquée par livre; souvent Creative Commons, mais elle varie.",
+      "reuse": "Vérifier la licence et les droits des illustrations sur la page du livre avant réutilisation.",
+      "url": "https://www.oapen.org/",
+      "status": "ouvert_sous_condition_par_titre",
+      "languages": [
+        "multilingue dont français selon l’ouvrage"
+      ],
+      "country": "Europe / international"
+    },
+    {
+      "id": "project-gutenberg",
+      "title": "Project Gutenberg",
+      "provider": "Project Gutenberg Literary Archive Foundation",
+      "subjects": [
+        "Littérature",
+        "Langues",
+        "Histoire",
+        "Philosophie"
+      ],
+      "levels": "Tous niveaux selon l’œuvre",
+      "formats": [
+        "livres numériques",
+        "textes"
+      ],
+      "license": "Œuvres entrées dans le domaine public aux États-Unis ou utilisées avec permission; statut différent possible dans d’autres pays.",
+      "reuse": "Vérifier le statut de droit d’auteur dans le pays d’utilisation et conserver l’avis Project Gutenberg; privilégier les titres effectivement domaine public en Côte d’Ivoire.",
+      "url": "https://www.gutenberg.org/",
+      "status": "domaine_public_a_verifier_par_pays",
+      "languages": [
+        "français et nombreuses langues; vérifier chaque œuvre"
+      ],
+      "country": "États-Unis, statut de domaine public à vérifier selon le pays"
+    },
+    {
+      "id": "openverse",
+      "title": "Openverse",
+      "provider": "WordPress Foundation et fournisseurs de contenus",
+      "subjects": [
+        "Toutes matières — images et audio"
+      ],
+      "levels": "Tous niveaux",
+      "formats": [
+        "images",
+        "audio"
+      ],
+      "license": "Recherche fédérée de contenus Creative Commons et domaine public; chaque résultat a ses propres droits.",
+      "reuse": "Ne pas intégrer depuis les résultats sans ouvrir la fiche source, vérifier licence, auteur, attribution et éventuelles restrictions.",
+      "url": "https://openverse.org/",
+      "status": "ouvert_sous_condition_par_fichier",
+      "languages": [
+        "multilingue; vérifier la source et chaque licence"
+      ],
+      "country": "International, licences propres à chaque fichier"
+    },
+    {
+      "id": "openstax-miage",
+      "title": "OpenStax — Foundations of Information Systems",
+      "provider": "Rice University / OpenStax",
+      "subjects": [
+        "Informatique de gestion",
+        "Systèmes d’information",
+        "Gestion"
+      ],
+      "levels": "Licence",
+      "formats": [
+        "manuel web",
+        "PDF",
+        "exercices et exemples"
+      ],
+      "license": "CC BY-NC-SA 4.0 selon la notice actuelle du titre; vérifier les crédits des figures.",
+      "reuse": "Utiliser comme référence ou lien de lecture. L’adaptation humaine est non commerciale, avec attribution et partage à l’identique; pas d’ingestion dans une IA générative sans autorisation préalable.",
+      "url": "https://openstax.org/books/foundations-information-systems/pages/preface",
+      "status": "ouvert_non_commercial_CC_BY_NC_SA_4_0_sans_ingestion_IA",
+      "languages": [
+        "anglais; traduction française possible selon CC BY 4.0 et crédits"
+      ],
+      "country": "États-Unis"
+    },
+    {
+      "id": "sesamath",
+      "title": "Sésamath — manuels, cahiers et exercices de mathématiques",
+      "provider": "Association Sésamath, France",
+      "subjects": [
+        "Mathématiques"
+      ],
+      "levels": "CM2, collège et lycée; vérifier chaque édition",
+      "formats": [
+        "manuels PDF et numériques",
+        "sources modifiables",
+        "exercices",
+        "animations"
+      ],
+      "license": "Manuels et cahiers Sésamath sous double licence GNU FDL et CC BY-SA; exceptions pour certains manuels de lycée édités par Magnard et contenus partenaires.",
+      "reuse": "Télécharger les fichiers auteurs signés Sésamath; attribuer et partager les adaptations sous licence compatible. Vérifier l’auteur et la licence de chaque édition.",
+      "url": "https://manuel.sesamath.net/?page=telechargement",
+      "status": "ouvert_CC_BY_SA_et_GFDL_selon_ouvrage",
+      "languages": [
+        "français"
+      ],
+      "country": "France"
+    },
+    {
+      "id": "tessa-fr",
+      "title": "TESSA — ressources éducatives libres en français",
+      "provider": "The Open University et partenaires africains",
+      "subjects": [
+        "Français",
+        "Sciences",
+        "Mathématiques",
+        "Pédagogie",
+        "Environnement"
+      ],
+      "levels": "Primaire et formation des enseignants; secondaire en sciences",
+      "formats": [
+        "séquences pédagogiques",
+        "guides",
+        "activités",
+        "documents PDF"
+      ],
+      "license": "CC BY-SA 4.0 pour les ressources concernées, sauf éléments tiers indiqués autrement.",
+      "reuse": "Traduire et adapter avec attribution TESSA/Open University et partage à l’identique; vérifier les mentions propres à chaque page et exclure les éléments tiers.",
+      "url": "https://www.open.edu/openlearncreate/",
+      "status": "ouvert_CC_BY_SA_4_0_sauf_exceptions",
+      "languages": [
+        "français",
+        "anglais",
+        "portugais",
+        "langues africaines selon ressource"
+      ],
+      "country": "Royaume-Uni et pays africains partenaires"
+    },
+    {
+      "id": "african-storybook-fr",
+      "title": "African Storybook — histoires illustrées en français",
+      "provider": "Saide et auteurs, illustrateurs et traducteurs africains",
+      "subjects": [
+        "Français",
+        "Lecture",
+        "Littérature",
+        "Langues",
+        "Éducation civique"
+      ],
+      "levels": "Petite enfance et primaire",
+      "formats": [
+        "histoires illustrées",
+        "PDF",
+        "traductions",
+        "outil auteur"
+      ],
+      "license": "Histoires sous licence ouverte; vérifier la licence propre à chaque livre (par exemple CC BY 4.0 ou CC BY-NC).",
+      "reuse": "Les histoires peuvent être copiées, traduites et adaptées selon leur licence; créditer auteur, illustrateur, traducteur, détenteur et African Storybook.",
+      "url": "https://www.africanstorybook.org/",
+      "status": "ouvert_sous_condition_par_histoire",
+      "languages": [
+        "français",
+        "anglais",
+        "nombreuses langues africaines"
+      ],
+      "country": "Afrique australe et pays partenaires"
+    },
+    {
+      "id": "wikilivres-fr",
+      "title": "Wikilivres (Wikibooks en français)",
+      "provider": "Wikimedia Foundation et contributeurs",
+      "subjects": [
+        "Mathématiques",
+        "Sciences",
+        "Informatique",
+        "Langues",
+        "Littérature",
+        "Histoire",
+        "Arts",
+        "Économie"
+      ],
+      "levels": "Tous niveaux; qualité et couverture variables",
+      "formats": [
+        "manuels collaboratifs",
+        "chapitres web"
+      ],
+      "license": "Texte sous CC BY-SA; des éléments intégrés peuvent avoir des licences distinctes.",
+      "reuse": "Attribuer les auteurs et liens, vérifier les médias inclus et partager les adaptations sous licence compatible.",
+      "url": "https://fr.wikibooks.org/",
+      "status": "ouvert_CC_BY_SA_selon_page_et_medias",
+      "languages": [
+        "français"
+      ],
+      "country": "International, édition francophone"
+    },
+    {
+      "id": "wikiversity-fr",
+      "title": "Wikiversité en français",
+      "provider": "Wikimedia Foundation et contributeurs",
+      "subjects": [
+        "Mathématiques",
+        "Sciences",
+        "Informatique",
+        "Langues",
+        "Histoire",
+        "Économie",
+        "Arts",
+        "Littérature"
+      ],
+      "levels": "Primaire au supérieur",
+      "formats": [
+        "cours",
+        "exercices",
+        "leçons",
+        "projets"
+      ],
+      "license": "Textes généralement CC BY-SA; vérifier les exceptions et médias propres à chaque leçon.",
+      "reuse": "Vérifier la page de licence, attribuer les auteurs et distribuer les adaptations sous licence compatible.",
+      "url": "https://fr.wikiversity.org/",
+      "status": "ouvert_CC_BY_SA_selon_page",
+      "languages": [
+        "français"
+      ],
+      "country": "International, édition francophone"
+    },
+    {
+      "id": "wikisource-fr",
+      "title": "Wikisource francophone",
+      "provider": "Wikimedia Foundation et contributeurs",
+      "subjects": [
+        "Littérature",
+        "Français",
+        "Langues",
+        "Histoire",
+        "Philosophie"
+      ],
+      "levels": "Tous niveaux selon le texte",
+      "formats": [
+        "livres numérisés",
+        "textes relus",
+        "traductions"
+      ],
+      "license": "Œuvres du domaine public ou sous licence libre; statut et édition à vérifier par texte et selon le pays.",
+      "reuse": "Vérifier le statut juridique, l’édition et la transcription; respecter la licence éventuelle de la transcription et des illustrations.",
+      "url": "https://fr.wikisource.org/",
+      "status": "domaine_public_ou_libre_a_verifier",
+      "languages": [
+        "français"
+      ],
+      "country": "International, édition francophone"
+    },
+    {
+      "id": "lelivrescolaire",
+      "title": "LeLivreScolaire.fr — manuels et ressources",
+      "provider": "LeLivreScolaire.fr et auteurs",
+      "subjects": [
+        "Français",
+        "Mathématiques",
+        "Sciences",
+        "Histoire-géographie",
+        "Langues",
+        "Arts",
+        "Économie"
+      ],
+      "levels": "Collège et lycée français; adapter aux programmes ivoiriens",
+      "formats": [
+        "manuels numériques",
+        "exercices",
+        "ressources multimédias",
+        "PDF"
+      ],
+      "license": "Les contenus produits par les auteurs de la plateforme sont annoncés CC BY-NC-SA; documents tiers et contenus des utilisateurs peuvent différer.",
+      "reuse": "Réutilisation et adaptation non commerciale avec attribution et partage à l’identique pour les contenus concernés; contrôler crédits et droits de chaque document intégré.",
+      "url": "https://www.lelivrescolaire.fr/",
+      "status": "ouvert_non_commercial_contenu_editeur_sous_conditions",
+      "languages": [
+        "français"
+      ],
+      "country": "France"
+    },
+    {
+      "id": "aunege",
+      "title": "AUNEGe — ressources en économie et gestion",
+      "provider": "Université numérique thématique française AUNEGe",
+      "subjects": [
+        "Économie",
+        "Gestion",
+        "Informatique de gestion",
+        "Comptabilité",
+        "Statistiques"
+      ],
+      "levels": "Supérieur; certaines ressources de cursus peuvent demander un accès membre",
+      "formats": [
+        "cours",
+        "modules multimédias",
+        "exercices interactifs",
+        "vidéos"
+      ],
+      "license": "Accès gratuit à une partie des ressources; licence et accès différents par ressource. Les modules complets peuvent être réservés aux établissements membres.",
+      "reuse": "Utiliser les liens en complément; ne copier ni adapter qu’après vérification de la licence de la ressource et des conditions d’accès.",
+      "url": "https://aunege.org/ressources/ressources-pedagogiques/",
+      "status": "gratuit_selon_ressource_droits_a_verifier",
+      "languages": [
+        "français"
+      ],
+      "country": "France"
+    },
+    {
+      "id": "unisciel",
+      "title": "Unisciel — Université des sciences en ligne",
+      "provider": "Université numérique thématique Unisciel",
+      "subjects": [
+        "Mathématiques",
+        "Physique",
+        "Chimie",
+        "Biologie",
+        "Informatique"
+      ],
+      "levels": "Supérieur et préparation à l’enseignement supérieur",
+      "formats": [
+        "cours",
+        "exercices",
+        "animations",
+        "vidéos"
+      ],
+      "license": "Certaines ressources sont disponibles sous Creative Commons; droits d’adaptation et accès parfois réservés aux partenaires; vérifier par ressource.",
+      "reuse": "Ouvrir la fiche de la ressource et demander les fichiers sources/licence si l’adaptation n’est pas explicitement ouverte.",
+      "url": "https://uel.unisciel.fr/",
+      "status": "ouvert_sous_condition_par_ressource",
+      "languages": [
+        "français"
+      ],
+      "country": "France"
+    },
+    {
+      "id": "uoh",
+      "title": "Université Ouverte des Humanités",
+      "provider": "Université Numérique Thématique UOH",
+      "subjects": [
+        "Histoire",
+        "Géographie",
+        "Littérature",
+        "Langues",
+        "Arts",
+        "Philosophie",
+        "Sciences humaines"
+      ],
+      "levels": "Supérieur",
+      "formats": [
+        "cours numériques",
+        "textes",
+        "audio",
+        "vidéos",
+        "multimédia"
+      ],
+      "license": "Licence et conditions affichées au niveau de chaque ressource; accès libre ne vaut pas autorisation générale de reprise.",
+      "reuse": "Sélectionner les ressources explicitement sous licence ouverte et créditer auteurs, établissements et médias tiers.",
+      "url": "https://uoh.fr/",
+      "status": "ouvert_sous_condition_par_ressource",
+      "languages": [
+        "français"
+      ],
+      "country": "France"
+    },
+    {
+      "id": "canal-u",
+      "title": "Canal-U — vidéos universitaires",
+      "provider": "Fédération de l’Audiovisuel de l’Enseignement Supérieur",
+      "subjects": [
+        "Sciences",
+        "Histoire",
+        "Langues",
+        "Arts",
+        "Sciences humaines",
+        "Économie",
+        "Gestion"
+      ],
+      "levels": "Supérieur et grand public",
+      "formats": [
+        "cours filmés",
+        "conférences",
+        "entretiens",
+        "documents vidéo"
+      ],
+      "license": "Licence propre à chaque vidéo; une partie seulement est réutilisable sous licence ouverte.",
+      "reuse": "Utiliser les vidéos en lien intégré; télécharger ou republier uniquement si la fiche donne une licence compatible.",
+      "url": "https://www.canal-u.tv/",
+      "status": "ouvert_sous_condition_par_video",
+      "languages": [
+        "français",
+        "autres langues selon vidéo"
+      ],
+      "country": "France"
+    },
+    {
+      "id": "oer-commons",
+      "title": "OER Commons — recherche de ressources éducatives",
+      "provider": "Institute for the Study of Knowledge Management in Education",
+      "subjects": [
+        "Toutes matières"
+      ],
+      "levels": "Tous niveaux selon les ressources",
+      "formats": [
+        "cours",
+        "manuels",
+        "activités",
+        "évaluations",
+        "médias"
+      ],
+      "license": "Dépôt international à licences mixtes; la licence est propre à chaque résultat.",
+      "reuse": "Filtrer sur une licence ouverte explicite et ouvrir la notice source; ne rien importer sur la seule base du mot gratuit.",
+      "url": "https://www.oercommons.org/",
+      "status": "ouvert_sous_condition_par_ressource",
+      "languages": [
+        "français",
+        "anglais",
+        "multilingue"
+      ],
+      "country": "International, dépôt à licences mixtes"
+    },
+    {
+      "id": "wiktionary-fr",
+      "title": "Wiktionnaire francophone",
+      "provider": "Wikimedia Foundation et contributeurs",
+      "subjects": [
+        "Français",
+        "Langues",
+        "Vocabulaire",
+        "Linguistique"
+      ],
+      "levels": "Tous niveaux",
+      "formats": [
+        "définitions",
+        "exemples",
+        "prononciation",
+        "étymologies"
+      ],
+      "license": "Textes sous CC BY-SA et GFDL selon les mentions du projet; fichiers audio peuvent avoir leurs propres licences.",
+      "reuse": "Attribuer les contributeurs et vérifier la licence des fichiers audio et exemples de citation.",
+      "url": "https://fr.wiktionary.org/",
+      "status": "ouvert_CC_BY_SA_selon_media",
+      "languages": [
+        "français"
+      ],
+      "country": "International, édition francophone"
+    },
+    {
+      "id": "african-storybook-abebech",
+      "title": "Abebech, la conductrice de bajaj — histoire en français",
+      "provider": "Dawit Girma; traduction Zanne Viljoen; illustrations Yirgalem Birhanu; African Storybook Initiative",
+      "subjects": [
+        "Français",
+        "Lecture",
+        "Littérature",
+        "Éducation civique"
+      ],
+      "levels": "Primaire; lecture guidée à adapter au niveau",
+      "formats": [
+        "histoire illustrée en ligne",
+        "PDF téléchargeable"
+      ],
+      "license": "Creative Commons Attribution 4.0 selon la notice de cette histoire.",
+      "reuse": "Copie, adaptation et traduction autorisées avec attribution complète de l’auteur, traductrice, illustratrice, langue et source African Storybook.",
+      "url": "https://www.africanstorybook.org/newviewer/index.php?bt=3&dual=false&id=33868",
+      "status": "ouvert_CC_BY_4_0_fiche_verifiee",
+      "languages": [
+        "français"
+      ],
+      "country": "Éthiopie; édition/traduction française"
+    },
+    {
+      "id": "france-programmes-scolaires",
+      "title": "Programmes scolaires officiels — France",
+      "provider": "Ministère de l’Éducation nationale, France",
+      "subjects": [
+        "Français",
+        "Mathématiques",
+        "Sciences",
+        "Histoire-géographie",
+        "Langues",
+        "Arts",
+        "Éducation physique",
+        "Enseignement moral et civique",
+        "Technologie"
+      ],
+      "levels": "CP au CM2; 6e à 3e; lycée général et technologique",
+      "formats": [
+        "programmes et bulletins officiels"
+      ],
+      "license": "Documents institutionnels consultables; licence de réutilisation à vérifier sur chaque document",
+      "reuse": "Référence curriculaire pour comparer les progressions francophones. Ne pas recopier les documents ou annexes sans vérifier leurs mentions de droits.",
+      "url": "https://www.education.gouv.fr/programmes-scolaires-41483",
+      "status": "reference_curriculaire_droits_a_verifier",
+      "languages": [
+        "français"
+      ],
+      "country": "France"
+    },
+    {
+      "id": "quebec-pfeq",
+      "title": "Programme de formation de l’école québécoise (PFEQ)",
+      "provider": "Ministère de l’Éducation du Québec",
+      "subjects": [
+        "Français",
+        "Mathématiques",
+        "Sciences et technologie",
+        "Histoire-géographie",
+        "Éducation à la citoyenneté",
+        "Arts",
+        "Éducation physique",
+        "Langues"
+      ],
+      "levels": "Primaire 1re à 6e année; secondaire 1er et 2e cycles",
+      "formats": [
+        "programmes par discipline",
+        "progressions des apprentissages",
+        "outils pédagogiques"
+      ],
+      "license": "Documents officiels consultables; droits propres à chaque document à vérifier",
+      "reuse": "Référence curriculaire francophone complémentaire. Les niveaux et contextes québécois doivent être adaptés; ne pas republier sans autorisation/licence explicite.",
+      "url": "https://www.quebec.ca/education/prescolaire-primaire-et-secondaire/programmes-formations-evaluation/programme-formation-ecole-quebecoise",
+      "status": "reference_curriculaire_droits_a_verifier",
+      "languages": [
+        "français"
+      ],
+      "country": "Québec, Canada"
+    },
+    {
+      "id": "senegal-programmes-elementaire",
+      "title": "Programme officiel de l’enseignement élémentaire — Sénégal",
+      "provider": "Ministère de l’Éducation nationale du Sénégal",
+      "subjects": [
+        "Français",
+        "Mathématiques",
+        "Sciences",
+        "Histoire-géographie",
+        "Éducation civique"
+      ],
+      "levels": "Enseignement élémentaire, 6 années",
+      "formats": [
+        "programme officiel",
+        "documentation pédagogique"
+      ],
+      "license": "Accès officiel; aucune licence générale de réutilisation repérée",
+      "reuse": "Référence de comparaison pour les classes primaires francophones. Vérifier droits et édition avant extraction ou adaptation.",
+      "url": "https://www.education.sn/pages/elementaire",
+      "status": "reference_curriculaire_droits_a_verifier",
+      "languages": [
+        "français"
+      ],
+      "country": "Sénégal"
+    },
+    {
+      "id": "ifadem-rel-francophone",
+      "title": "Ressources éducatives libres IFADEM",
+      "provider": "IFADEM — OIF et Agence universitaire de la Francophonie",
+      "subjects": [
+        "Français",
+        "Mathématiques",
+        "Sciences",
+        "Didactique",
+        "Formation des enseignants",
+        "Numérique éducatif"
+      ],
+      "levels": "Primaire et formation des enseignants, selon le pays et le livret",
+      "formats": [
+        "livrets pédagogiques",
+        "modules de formation",
+        "ressources Moodle"
+      ],
+      "license": "Ressources annoncées comme REL; vérifier la licence et les éléments tiers sur chaque livret",
+      "reuse": "Collection multinationale francophone, conçue avec des équipes nationales. Sélectionner le pays, la matière et le livret puis conserver sa notice de licence.",
+      "url": "https://www.ifadem.org/fr/ressources",
+      "status": "ouvert_sous_condition_par_ressource",
+      "languages": [
+        "français",
+        "langues nationales selon le pays"
+      ],
+      "country": "Pays francophones partenaires"
+    },
+    {
+      "id": "tessa-resources-francophone-africa",
+      "title": "TESSA — ressources pour l’enseignement en Afrique francophone",
+      "provider": "The Open University / TESSA",
+      "subjects": [
+        "Français",
+        "Lecture",
+        "Mathématiques",
+        "Sciences",
+        "Pédagogie",
+        "Éducation inclusive"
+      ],
+      "levels": "Primaire et premier cycle du secondaire en sciences; modules selon collection",
+      "formats": [
+        "activités de classe",
+        "matériels pédagogiques",
+        "PDF",
+        "Word"
+      ],
+      "license": "Les matériels TESSA sont publiés sous licences Creative Commons; vérifier les exceptions et crédits propres au fichier",
+      "reuse": "Ressources créées par des experts de plusieurs pays africains et conçues pour adaptation locale. Respecter la licence et les crédits de chaque document.",
+      "url": "https://www.open.edu/openlearncreate/course/index.php?categoryid=569",
+      "status": "ouvert_sous_condition_par_ressource",
+      "languages": [
+        "français",
+        "anglais",
+        "arabe",
+        "kiswahili selon ressource"
+      ],
+      "country": "Afrique francophone et réseau panafricain"
+    },
+    {
+      "id": "aehn-histoire-afrique-fr",
+      "title": "L’Histoire du Développement de l’Afrique — manuel francophone",
+      "provider": "African Economic History Network",
+      "subjects": [
+        "Histoire",
+        "Géographie",
+        "Économie",
+        "Sciences sociales"
+      ],
+      "levels": "Supérieur; chapitres sélectionnables pour secondaire selon adaptation",
+      "formats": [
+        "manuel web",
+        "chapitres PDF",
+        "questions d’étude",
+        "sources et lectures conseillées"
+      ],
+      "license": "CC BY annoncée pour l’édition française; vérifier les crédits de chaque élément intégré",
+      "reuse": "Manuel d’histoire africaine en français, avec questions d’étude et sources. Attribuer les éditeurs et conserver la licence CC BY.",
+      "url": "https://aehnetwork.org/textbook/",
+      "status": "ouvert_CC_BY_4_0_a_verifier_par_element",
+      "languages": [
+        "français",
+        "anglais"
+      ],
+      "country": "Ressource panafricaine"
+    },
+    {
+      "id": "unesco-citoyennete-mondiale-fr",
+      "title": "Éducation à la citoyenneté mondiale : thèmes et objectifs d’apprentissage",
+      "provider": "UNESCO",
+      "subjects": [
+        "EDHC",
+        "Éducation civique",
+        "Droits humains",
+        "Histoire-géographie",
+        "Philosophie"
+      ],
+      "levels": "Primaire supérieur, secondaire et formation des enseignants — à adapter à l’âge",
+      "formats": [
+        "guide pédagogique PDF",
+        "objectifs et thèmes d’apprentissage"
+      ],
+      "license": "CC BY-SA 3.0 IGO",
+      "reuse": "Document en français réutilisable avec attribution et partage à l’identique; vérifier séparément les images créditées à des tiers.",
+      "url": "https://www.unesco.ch/wp-content/uploads/2017/03/TOPICS-AND-LEARNING-OBJECTIVES-FR.pdf",
+      "status": "ouvert_CC_BY_SA_3_0_IGO",
+      "languages": [
+        "français"
+      ],
+      "country": "International"
+    },
+    {
+      "id": "unesco-education-developpement-durable",
+      "title": "Éducation aux objectifs de développement durable — objectifs d’apprentissage",
+      "provider": "UNESCO",
+      "subjects": [
+        "Sciences",
+        "Géographie",
+        "Éducation civique",
+        "Économie",
+        "Environnement",
+        "Compétences transversales"
+      ],
+      "levels": "Tous âges, avec adaptation au niveau scolaire",
+      "formats": [
+        "guide pédagogique PDF",
+        "objectifs et thèmes par ODD"
+      ],
+      "license": "CC BY-SA 3.0 IGO",
+      "reuse": "Référence transversale pour construire des situations contextualisées. Utiliser une édition linguistique adaptée et respecter attribution, partage à l’identique et crédits tiers.",
+      "url": "https://unesdoc.unesco.org/ark:/48223/pf0000247444",
+      "status": "ouvert_CC_BY_SA_3_0_IGO",
+      "languages": [
+        "anglais; traductions disponibles selon édition"
+      ],
+      "country": "International"
+    },
+    {
+      "id": "coerll-francais-interactif",
+      "title": "Français interactif",
+      "provider": "COERLL — University of Texas at Austin",
+      "subjects": [
+        "Français",
+        "Langues",
+        "Grammaire",
+        "Vocabulaire",
+        "Compréhension orale",
+        "Expression écrite"
+      ],
+      "levels": "Débutant et intermédiaire; ressource d’appui pour plusieurs classes",
+      "formats": [
+        "manuel",
+        "exercices autocorrectifs",
+        "audio",
+        "vidéos",
+        "dialogues"
+      ],
+      "license": "CC BY",
+      "reuse": "Cours de français librement adaptable avec attribution. Vérifier les droits de chaque média embarqué avant extraction séparée.",
+      "url": "https://www.laits.utexas.edu/fi/",
+      "status": "ouvert_CC_BY_titre_verifie",
+      "languages": [
+        "français"
+      ],
+      "country": "États-Unis, contenu francophone"
+    },
+    {
+      "id": "coerll-trayectos-espagnol",
+      "title": "Trayectos — cours ouvert d’espagnol débutant",
+      "provider": "COERLL — University of Texas at Austin",
+      "subjects": [
+        "Espagnol",
+        "Langues étrangères"
+      ],
+      "levels": "Débutant; secondaire et supérieur selon adaptation",
+      "formats": [
+        "manuel",
+        "curriculum",
+        "médias et activités"
+      ],
+      "license": "CC BY-SA",
+      "reuse": "Cours ouvert réutilisable et adaptable avec attribution et partage à l’identique; sélectionner des exercices adaptés au niveau.",
+      "url": "https://trayectos.coerll.utexas.edu/",
+      "status": "ouvert_CC_BY_SA_titre_verifie",
+      "languages": [
+        "espagnol",
+        "anglais pour certaines consignes"
+      ],
+      "country": "États-Unis, apprentissage des langues"
+    },
+    {
+      "id": "coerll-deutsch-im-blick",
+      "title": "Deutsch im Blick — cours multimédia d’allemand",
+      "provider": "COERLL — University of Texas at Austin",
+      "subjects": [
+        "Allemand",
+        "Langues étrangères"
+      ],
+      "levels": "Débutant, première année de cours; adaptables aux niveaux scolaires",
+      "formats": [
+        "manuel",
+        "vidéos",
+        "audio",
+        "grammaire",
+        "activités et devoirs"
+      ],
+      "license": "CC BY",
+      "reuse": "Cours d’allemand librement adaptable avec attribution. Vérifier les crédits des médias externes avant réutilisation séparée.",
+      "url": "https://coerll.utexas.edu/dib/",
+      "status": "ouvert_CC_BY_titre_verifie",
+      "languages": [
+        "allemand",
+        "anglais pour certaines consignes"
+      ],
+      "country": "États-Unis, apprentissage des langues"
+    },
+    {
+      "id": "open-music-theory",
+      "title": "Open Music Theory",
+      "provider": "Open Music Theory contributors",
+      "subjects": [
+        "Éducation musicale",
+        "Musique",
+        "Arts"
+      ],
+      "levels": "Secondaire supérieur et supérieur; notions de base adaptables",
+      "formats": [
+        "manuel interactif",
+        "exemples audio et notation"
+      ],
+      "license": "CC BY-SA 4.0",
+      "reuse": "Réutiliser et adapter avec attribution et partage à l’identique. Ressource en anglais, à traduire/adapter au programme local.",
+      "url": "https://viva.pressbooks.pub/openmusictheory/",
+      "status": "ouvert_CC_BY_SA_4_0",
+      "languages": [
+        "anglais"
+      ],
+      "country": "International"
+    },
+    {
+      "id": "fundamentals-health-physical-activity",
+      "title": "Fundamentals of Health and Physical Activity",
+      "provider": "Concordia University OER Project",
+      "subjects": [
+        "EPS",
+        "Éducation physique",
+        "Santé"
+      ],
+      "levels": "Supérieur; notions de santé et activité physique adaptables au secondaire",
+      "formats": [
+        "manuel ouvert",
+        "chapitres et tests de connaissance"
+      ],
+      "license": "CC BY-NC-SA 4.0",
+      "reuse": "Adaptation autorisée pour un usage non commercial, avec attribution et partage à l’identique. Contenu en anglais et niveau universitaire.",
+      "url": "https://opentextbooks.concordia.ca/fundamentalsofhealthandphysicalactivity/",
+      "status": "ouvert_non_commercial_CC_BY_NC_SA_4_0",
+      "languages": [
+        "anglais"
+      ],
+      "country": "Canada"
+    },
+    {
+      "id": "practical-introduction-databases",
+      "title": "A Practical Introduction to Databases",
+      "provider": "Runestone Academy / Christopher Painter-Wakefield",
+      "subjects": [
+        "Informatique",
+        "Bases de données",
+        "SQL",
+        "MIAGE"
+      ],
+      "levels": "Introduction universitaire, adapté à Licence 1",
+      "formats": [
+        "manuel interactif",
+        "exemples SQL",
+        "activités"
+      ],
+      "license": "CC BY-SA 4.0",
+      "reuse": "Manuel librement adaptable avec attribution et partage à l’identique. Le texte est en anglais; SQL et modèles relationnels conviennent au socle MIAGE.",
+      "url": "https://runestone.academy/ns/books/published/practical_db/front-matter/preface.html",
+      "status": "ouvert_CC_BY_SA_4_0",
+      "languages": [
+        "anglais"
+      ],
+      "country": "États-Unis, enseignement supérieur"
+    },
+    {
+      "id": "uot-computing-textbooks",
+      "title": "Free Computing Textbooks — manuels d’informatique ouverts",
+      "provider": "Universal Open Textbook Initiative",
+      "subjects": [
+        "Informatique",
+        "Algorithmique",
+        "Programmation Python",
+        "Bases de données",
+        "Bureautique",
+        "MIAGE"
+      ],
+      "levels": "Secondaire supérieur et enseignement supérieur selon le titre",
+      "formats": [
+        "manuels web",
+        "PDF"
+      ],
+      "license": "Licence ouverte annoncée; vérifier la licence et la langue sur chaque titre",
+      "reuse": "Répertoire de manuels gratuits, avec un cours Python en français et des manuels de bases de données, tableurs et systèmes. N’intégrer que les titres dont la notice confirme la licence.",
+      "url": "https://uotinitiative.org/computing-textbooks",
+      "status": "ouvert_sous_condition_par_titre",
+      "languages": [
+        "français pour certains titres; anglais pour d’autres"
+      ],
+      "country": "International"
+    },
+    {
+      "id": "upb-miage-l1-program",
+      "title": "Programme Licence MIAGE — référence de matières L1",
+      "provider": "Université Polytechnique de Bingerville",
+      "subjects": [
+        "Programmation Python et Java",
+        "Bases de données et SQL",
+        "Économie et comptabilité",
+        "Théorie des organisations",
+        "Mathématiques pour la gestion",
+        "Anglais professionnel"
+      ],
+      "levels": "L1 MIAGE",
+      "formats": [
+        "présentation de programme"
+      ],
+      "license": "Site institutionnel, droits de réutilisation non précisés",
+      "reuse": "Utiliser uniquement pour identifier les matières MIAGE du parcours. Ne pas recopier la page ni présenter cette formation comme programme national unique.",
+      "url": "https://upb.ci/formations/miage",
+      "status": "reference_de_parcours_droits_a_verifier",
+      "languages": [
+        "français"
+      ],
+      "country": "Côte d’Ivoire"
+    },
+    {
+      "id": "art-open-textbooks-milne",
+      "title": "Milne Open Textbooks — arts et disciplines connexes",
+      "provider": "Milne Library / SUNY Geneseo",
+      "subjects": [
+        "Arts plastiques",
+        "Arts visuels",
+        "Histoire de l’art",
+        "Théâtre"
+      ],
+      "levels": "Supérieur; notions et activités adaptables au secondaire",
+      "formats": [
+        "manuels ouverts",
+        "PDF",
+        "chapitres web"
+      ],
+      "license": "CC BY 4.0 sauf mention contraire sur le titre",
+      "reuse": "Vérifier la licence de chaque ouvrage. Adapter les activités au contexte et aux compétences artistiques du programme ciblé.",
+      "url": "https://milnepublishing.geneseo.edu/",
+      "status": "ouvert_sous_condition_par_titre",
+      "languages": [
+        "anglais"
+      ],
+      "country": "États-Unis"
+    },
+    {
+      "id": "openstax-philosophy",
+      "title": "Introduction to Philosophy",
+      "provider": "OpenStax / Rice University",
+      "subjects": [
+        "Philosophie",
+        "Logique",
+        "Éthique",
+        "Sciences humaines"
+      ],
+      "levels": "Supérieur; chapitres introductifs adaptables en Première et Terminale",
+      "formats": [
+        "manuel web",
+        "PDF",
+        "questions de révision"
+      ],
+      "license": "CC BY-NC-SA 4.0 selon la notice actuelle du titre.",
+      "reuse": "Adaptation humaine non commerciale avec attribution et partage à l’identique. Ne pas ingérer dans une IA générative sans autorisation; vérifier les crédits des figures.",
+      "url": "https://openstax.org/books/introduction-philosophy/pages/preface",
+      "status": "ouvert_non_commercial_CC_BY_NC_SA_4_0_sans_ingestion_IA",
+      "languages": [
+        "anglais"
+      ],
+      "country": "États-Unis"
+    },
+    {
+      "id": "senegal-promet",
+      "title": "PROMET — contenus éducatifs validés par niveau et discipline",
+      "provider": "Ministère de l’Éducation nationale du Sénégal",
+      "subjects": [
+        "Français",
+        "Mathématiques",
+        "Sciences",
+        "Histoire-géographie",
+        "Langues",
+        "Disciplines du secondaire"
+      ],
+      "levels": "CI à CM2; 6e à Terminale, selon la matière",
+      "formats": [
+        "cours",
+        "vidéos",
+        "quiz",
+        "ressources pédagogiques"
+      ],
+      "license": "Plateforme officielle; droits de réutilisation à vérifier sur chaque ressource",
+      "reuse": "Permet de repérer des documents validés par niveau et discipline. Utiliser les liens de consultation; ne pas extraire ni republier sans licence explicite. Les classes sénégalaises ne correspondent pas automatiquement aux classes ivoiriennes.",
+      "url": "https://apprendre.education.sn/",
+      "status": "reference_officielle_droits_a_verifier",
+      "languages": [
+        "français"
+      ],
+      "country": "Sénégal"
+    },
+    {
+      "id": "belgique-referentiels-fw-b",
+      "title": "Référentiels officiels du tronc commun — Fédération Wallonie-Bruxelles",
+      "provider": "Administration générale de l’Enseignement, Fédération Wallonie-Bruxelles",
+      "subjects": [
+        "Français",
+        "Langues modernes",
+        "Mathématiques",
+        "Sciences",
+        "Techniques et numérique",
+        "Histoire-géographie",
+        "Économie",
+        "Philosophie et citoyenneté",
+        "Arts",
+        "Éducation physique",
+        "Santé"
+      ],
+      "levels": "P1 à P6; secondaire inférieur en déploiement progressif",
+      "formats": [
+        "référentiels annuels",
+        "programmes",
+        "documents PDF"
+      ],
+      "license": "Référentiels et programmes officiels; licence de réutilisation à vérifier par document",
+      "reuse": "Documente huit domaines d’apprentissage et les attendus par année. Utile pour comparer et diversifier les objectifs; ne pas confondre référentiels (quoi apprendre) et programmes (comment enseigner). Vérifier les droits avant copie.",
+      "url": "https://www.enseignement.be/parcours-dapprentissage/maternel-et-primaire-ordinaire/organisation-de-lenseignement-maternel-et-primaire/contenus-dapprentissage",
+      "status": "reference_curriculaire_droits_a_verifier",
+      "languages": [
+        "français"
+      ],
+      "country": "Belgique francophone"
+    },
+    {
+      "id": "wce-esl100-english",
+      "title": "ESL100 — cours d’anglais débutant CC BY",
+      "provider": "World Cultures & Education",
+      "subjects": [
+        "Anglais",
+        "Langues étrangères",
+        "Expression orale",
+        "Compréhension écrite"
+      ],
+      "levels": "Débutant A1; ressource d’appui à adapter aux classes et examens ciblés",
+      "formats": [
+        "cours",
+        "dialogues",
+        "quiz",
+        "cahier d’exercices"
+      ],
+      "license": "CC BY 4.0 pour les contenus originaux WCE; médias tiers exclus",
+      "reuse": "Partager et adapter avec attribution exacte à WCE / Dr Wagih Elgohary et indication des changements. Les vidéos VOA/BBC/British Council sont seulement liées et gardent leurs droits distincts.",
+      "url": "https://www.mywce.org/esl100/materials",
+      "status": "ouvert_CC_BY_4_0_contenus_originaux",
+      "languages": [
+        "anglais",
+        "explications complémentaires en arabe"
+      ],
+      "country": "International"
+    },
+    {
+      "id": "open-geography-textbooks",
+      "title": "Open Geography Education — manuels ouverts de géographie",
+      "provider": "Open Geography Education",
+      "subjects": [
+        "Géographie",
+        "Géologie",
+        "Histoire-géographie",
+        "TICE géographique"
+      ],
+      "levels": "Secondaire supérieur et supérieur; chapitres de base à adapter au primaire/collège",
+      "formats": [
+        "manuels web",
+        "chapitres",
+        "cartes et ressources géospatiales"
+      ],
+      "license": "Licence affichée par ouvrage; les titres listés incluent CC BY-NC-SA 4.0",
+      "reuse": "Utiliser les titres correspondant à leurs licences, notamment World Regional Geography. Adapter les cartes/exemples au contexte local et vérifier les crédits par chapitre.",
+      "url": "https://www.opengeography.org/etextbooks.html",
+      "status": "ouvert_sous_condition_par_titre",
+      "languages": [
+        "anglais"
+      ],
+      "country": "États-Unis, ressources internationales"
+    },
+    {
+      "id": "dpfc-cp-experimental-regime-2025",
+      "title": "Régime expérimental réformé du CP1–CP2 (zone expérimentale)",
+      "provider": "Direction de la Pédagogie et de la Formation Continue, Côte d’Ivoire",
+      "subjects": [
+        "Français",
+        "Mathématiques",
+        "Sciences",
+        "Technologie",
+        "TICE",
+        "EDHC",
+        "AEC",
+        "EPS",
+        "Histoire-géographie",
+        "Chant",
+        "Activités coopératives"
+      ],
+      "levels": "CP1 et CP2 — uniquement écoles de la zone expérimentale",
+      "formats": [
+        "circulaire officielle PDF",
+        "horaires et disciplines"
+      ],
+      "license": "Document officiel consultable; licence de réutilisation non explicitée",
+      "reuse": "Référence importante pour distinguer le nouveau régime expérimental du programme ordinaire. Ne pas appliquer à toutes les écoles ni recopier sans validation des droits.",
+      "url": "https://dpfc-ci.net/dpfc/2026/textes_officiels/mena/1/Circulaire%20N%C2%B0%200305_%20Exp%C3%A9rimentation%20des%20nouveaux%20programmes%20%C3%A9ducatifs.pdf",
+      "status": "reference_officielle_experimentale_droits_a_verifier",
+      "languages": [
+        "français"
+      ],
+      "country": "Côte d’Ivoire"
+    },
+    {
+      "id": "dpfc-primary-regime-2026",
+      "title": "Régime pédagogique ordinaire de l’enseignement primaire (2026)",
+      "provider": "Direction de la Pédagogie et de la Formation Continue, Côte d’Ivoire",
+      "subjects": [
+        "Français",
+        "Mathématiques",
+        "Formation scientifique",
+        "Technologie",
+        "Histoire-géographie",
+        "EDHC",
+        "AEC",
+        "EPS",
+        "TICE"
+      ],
+      "levels": "CP1 à CM2 — régime ordinaire; distinguer CP1–CP2 expérimentaux",
+      "formats": [
+        "régime pédagogique officiel PDF",
+        "horaires et disciplines"
+      ],
+      "license": "Document officiel consultable; licence de réutilisation non explicitée",
+      "reuse": "Référence pour identifier les matières et les volumes horaires du régime ordinaire. Pour le contenu détaillé, ouvrir le programme éducatif de la classe concernée. Ne pas recopier avant vérification des droits.",
+      "url": "https://dpfc-ci.net/dpfc/2026/textes_officiels/R%C3%A9gime%20p%C3%A9dagogique%20de%20l%27enseignement%20primaire.pdf",
+      "status": "reference_officielle_droits_a_verifier",
+      "languages": [
+        "français"
+      ],
+      "country": "Côte d’Ivoire"
+    },
+    {
+      "id": "senegal-programmes-moyen-secondaire",
+      "title": "Programmes du moyen et du secondaire général — Sénégal",
+      "provider": "Ministère de l’Éducation nationale du Sénégal",
+      "subjects": [
+        "Français",
+        "Mathématiques",
+        "Sciences",
+        "Technologie",
+        "Histoire-géographie",
+        "Langues",
+        "Arts",
+        "Éducation physique",
+        "Citoyenneté"
+      ],
+      "levels": "6e à Terminale selon le cycle et la discipline",
+      "formats": [
+        "programme officiel",
+        "présentation des cycles"
+      ],
+      "license": "Accès officiel; droits de réutilisation à vérifier par document",
+      "reuse": "Référence pour comparer les programmes sénégalais avec les classes du site. Les niveaux et matières dépendent du cycle; ne pas recopier sans mention de licence.",
+      "url": "https://www.education.sn/pages/moyen",
+      "status": "reference_curriculaire_droits_a_verifier",
+      "languages": [
+        "français"
+      ],
+      "country": "Sénégal"
+    }
+  ]
+}

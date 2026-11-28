@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Télécharger l'application</title>
+<meta name="description" content="Application de la plateforme éducative pour Windows, Mac et Linux, gratuite.">
+<link rel="icon" type="image/png" href="favicon.png">
+<style>
+  :root {
+    --bleu: #3158D5; --bleu-clair: #E8EEFC; --fond: #F5F7FC; --carte: #FFFFFF; --texte: #1F2A44;
+    --gris: #606B80; --bord: #DCE2EE; --soleil: #F4B63F;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bleu: #7C9BFF; --bleu-clair: #1E2A4D; --fond: #0F1424; --carte: #182036; --texte: #E8ECF6;
+            --gris: #A3ADC2; --bord: #2A3452; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fond); color: var(--texte);
+         font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.5; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 16px 56px; }
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 26px; }
+  header img { width: 56px; height: 56px; border-radius: 14px; }
+  header a { margin-left: auto; color: var(--bleu); font-weight: 700; text-decoration: none; white-space: nowrap; }
+  h1 { font-size: clamp(24px, 5vw, 34px); margin: 0 0 6px; line-height: 1.2; }
+  .intro { color: var(--gris); margin: 0 0 26px; max-width: 640px; }
+  .grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .carte { background: var(--carte); border: 1px solid var(--bord); border-radius: 18px; padding: 20px;
+           display: flex; flex-direction: column; gap: 10px; }
+  .carte.conseillee { border: 2px solid var(--bleu); box-shadow: 0 8px 26px rgba(49, 88, 213, .14); }
+  .carte h2 { font-size: 19px; margin: 0; display: flex; align-items: center; gap: 8px; }
+  .badge { display: none; font-size: 12px; font-weight: 700; color: var(--bleu); background: var(--bleu-clair);
+           border-radius: 99px; padding: 2px 10px; }
+  .conseillee .badge { display: inline-block; }
+  .carte p { margin: 0; color: var(--gris); font-size: 14px; }
+  .bouton { display: inline-block; text-align: center; background: var(--bleu); color: #fff; text-decoration: none;
+            font-weight: 700; border-radius: 12px; padding: 12px 16px; margin-top: auto; }
+  .bouton.second { background: transparent; color: var(--bleu); border: 1.5px solid var(--bleu); }
+  .bouton:hover { filter: brightness(1.08); }
+  section { margin-top: 34px; }
+  section h2 { font-size: 20px; margin: 0 0 10px; }
+  ol { margin: 0; padding-left: 22px; }
+  li { margin: 4px 0; }
+  details { background: var(--carte); border: 1px solid var(--bord); border-radius: 14px; padding: 14px 18px;
+            margin-bottom: 10px; }
+  summary { font-weight: 700; cursor: pointer; }
+  details[open] summary { margin-bottom: 8px; }
+  .note { font-size: 14px; color: var(--gris); }
+  kbd { background: var(--bleu-clair); border-radius: 6px; padding: 1px 6px; font-family: inherit; font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="icons/Icon-192.png" alt="">
+    <strong>Plateforme éducative</strong>
+    <a href="./">← Retour au site</a>
+  </header>
+
+  <h1>Télécharger l’application</h1>
+  <p class="intro">Gratuite, pour Windows, Mac et Linux. Elle ouvre la plateforme dans sa propre fenêtre, avec les
+    mêmes comptes, les mêmes cours et les mêmes progrès que le site. Elle se met à jour toute seule, en même temps
+    que le site. Il faut une connexion internet.</p>
+
+  <div class="grille">
+    <div class="carte" id="windows">
+      <h2>Windows <span class="badge">Votre ordinateur</span></h2>
+      <p>Windows 10 et 11 (64 bits). Installation en un clic, sans droits administrateur.</p>
+      <a class="bouton" href="https://github.com/nikaisedoua-source/plateforme-educative-public/releases/latest/download/Plateforme-educative-Windows.exe">Télécharger pour Windows</a>
+    </div>
+    <div class="carte" id="mac">
+      <h2>Mac <span class="badge">Votre ordinateur</span></h2>
+      <p>macOS 12 ou plus récent. Pour savoir quelle version prendre : menu Pomme → « À propos de ce Mac », ligne
+        « Puce » (Apple M1, M2…) ou « Processeur » (Intel).</p>
+      <a class="bouton" id="mac-arm64" href="https://github.com/nikaisedoua-source/plateforme-educative-public/releases/latest/download/Plateforme-educative-Mac-arm64.dmg">Mac à puce Apple (M1, M2…)</a>
+      <a class="bouton second" id="mac-x64" href="https://github.com/nikaisedoua-source/plateforme-educative-public/releases/latest/download/Plateforme-educative-Mac-x64.dmg">Mac Intel</a>
+    </div>
+    <div class="carte" id="linux">
+      <h2>Linux <span class="badge">Votre ordinateur</span></h2>
+      <p>AppImage pour toutes les distributions, ou paquet .deb pour Ubuntu et Debian (64 bits).</p>
+      <a class="bouton" href="https://github.com/nikaisedoua-source/plateforme-educative-public/releases/latest/download/Plateforme-educative-Linux.AppImage">Télécharger (AppImage)</a>
+      <a class="bouton second" href="https://github.com/nikaisedoua-source/plateforme-educative-public/releases/latest/download/Plateforme-educative-Linux.deb">Paquet .deb</a>
+    </div>
+    <div class="carte" id="telephone">
+      <h2>Téléphone et tablette <span class="badge">Votre appareil</span></h2>
+      <p>Pas de téléchargement : ouvrez le site, puis ajoutez-le à l’écran d’accueil. Il s’ouvre ensuite comme une
+        application.</p>
+      <a class="bouton second" href="./">Ouvrir le site</a>
+    </div>
+  </div>
+
+  <section>
+    <h2>Premier lancement</h2>
+    <p class="note">L’application est gratuite et n’est pas enregistrée auprès de Microsoft ni d’Apple (cela coûte
+      cher chaque année). Votre ordinateur demande donc une confirmation, une seule fois.</p>
+    <details id="aide-windows">
+      <summary>Windows : « Windows a protégé votre ordinateur »</summary>
+      <ol>
+        <li>Ouvrez le fichier téléchargé <kbd>Plateforme-educative-Windows.exe</kbd>.</li>
+        <li>Si un écran bleu apparaît, cliquez sur <kbd>Informations complémentaires</kbd>,
+          puis sur <kbd>Exécuter quand même</kbd>.</li>
+        <li>L’application s’installe et s’ouvre. Elle est ensuite dans le menu Démarrer et sur le Bureau.</li>
+      </ol>
+    </details>
+    <details id="aide-mac">
+      <summary>Mac : « impossible de vérifier le développeur »</summary>
+      <ol>
+        <li>Ouvrez le fichier <kbd>.dmg</kbd> téléchargé et glissez l’icône dans le dossier
+          <kbd>Applications</kbd>.</li>
+        <li>Ouvrez l’application depuis le dossier Applications. Si le Mac refuse, cliquez sur <kbd>OK</kbd>.</li>
+        <li>Allez dans <kbd>Réglages Système</kbd> → <kbd>Confidentialité et sécurité</kbd>, descendez en bas de la
+          page et cliquez sur <kbd>Ouvrir quand même</kbd>, puis confirmez.</li>
+      </ol>
+      <p class="note">Sur les Mac plus anciens : clic droit (ou Ctrl + clic) sur l’application → <kbd>Ouvrir</kbd>
+        → <kbd>Ouvrir</kbd>.</p>
+    </details>
+    <details id="aide-linux">
+      <summary>Linux</summary>
+      <ol>
+        <li>AppImage : clic droit sur le fichier → Propriétés → cocher « Autoriser l’exécution », ou dans un
+          terminal <kbd>chmod +x Plateforme-educative-Linux.AppImage</kbd>, puis double-clic.</li>
+        <li>Paquet .deb : double-clic pour l’installer, ou <kbd>sudo apt install ./Plateforme-educative-Linux.deb</kbd>.</li>
+      </ol>
+    </details>
+    <details id="aide-telephone">
+      <summary>Téléphone et tablette : ajouter à l’écran d’accueil</summary>
+      <ol>
+        <li>Android : ouvrez le site dans Chrome, touchez le menu <kbd>⋮</kbd> puis
+          <kbd>Ajouter à l’écran d’accueil</kbd> (ou <kbd>Installer l’application</kbd>).</li>
+        <li>iPhone et iPad : ouvrez le site dans Safari, touchez <kbd>Partager</kbd> puis
+          <kbd>Sur l’écran d’accueil</kbd>.</li>
+      </ol>
+    </details>
+  </section>
+</main>
+<script>
+  // Met en avant la version qui correspond à l'appareil et ouvre son aide.
+  (function () {
+    var ua = navigator.userAgent || "";
+    var mobile = /Android|iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    var id = mobile ? "telephone" : /Windows/i.test(ua) ? "windows" : /Mac/i.test(ua) ? "mac"
+      : /Linux|X11|CrOS/i.test(ua) ? "linux" : "";
+    if (!id) return;
+    var carte = document.getElementById(id);
+    carte.classList.add("conseillee");
+    carte.parentNode.insertBefore(carte, carte.parentNode.firstChild);
+    if (id === "mac") {
+      // Mac Intel reconnu par sa carte graphique (les navigateurs disent « Intel » même sur les puces Apple).
+      try {
+        var gl = document.createElement("canvas").getContext("webgl");
+        var info = gl && gl.getExtension("WEBGL_debug_renderer_info");
+        var rendu = info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : "";
+        if (/Intel|AMD|Radeon|NVIDIA/i.test(rendu) && !/Apple M/i.test(rendu)) {
+          var arm = document.getElementById("mac-arm64"), x64 = document.getElementById("mac-x64");
+          arm.className = "bouton second"; x64.className = "bouton";
+          arm.parentNode.insertBefore(x64, arm);
+        }
+      } catch (e) {}
+    }
+    var aide = document.getElementById("aide-" + id);
+    if (aide) aide.open = true;
+  })();
+</script>
+</body>
+</html>

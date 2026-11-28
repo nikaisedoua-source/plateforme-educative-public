@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <base href="/plateforme-educative-public/">
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Espace élève et administration de la plateforme éducative.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Plateforme éducative">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <title>Plateforme éducative</title>
+  <link rel="manifest" href="manifest.json">
+  <!-- KaTeX 0.16.11 (licence MIT), copié dans le projet : formules composées comme dans un document imprimé. -->
+  <link rel="stylesheet" href="katex/katex.min.css">
+  <style>
+    /* Polices du projet (licence OFL) pour les énoncés affichés en HTML/MathML. */
+    @font-face { font-family: "Nunito"; font-weight: 400; src: url("assets/fonts/Nunito_400Regular.ttf"); }
+    @font-face { font-family: "Nunito"; font-weight: 700; src: url("assets/fonts/Nunito_700Bold.ttf"); }
+    @font-face { font-family: "Nunito"; font-weight: 800; src: url("assets/fonts/Nunito_800ExtraBold.ttf"); }
+    body { background: #F5F7FF; margin: 0; }
+    /* Écran de chargement affiché tout de suite (sur un réseau mobile, le site met plusieurs secondes à arriver). */
+    #chargement { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 18px; font: 600 16px/1.4 "Nunito", system-ui, sans-serif; color: #2B3352;
+      text-align: center; padding: 0 24px; transition: opacity .3s; }
+    #chargement .rond { width: 46px; height: 46px; border-radius: 50%; border: 5px solid #DCE2FF;
+      border-top-color: #5B7CFA; animation: tourne 0.9s linear infinite; }
+    #chargement small { font-weight: 400; color: #6B7391; max-width: 300px; }
+    @keyframes tourne { to { transform: rotate(360deg); } }
+    @media (prefers-color-scheme: dark) { #chargement { color: #E6E9F5; } #chargement small { color: #A9B0C8; } }
+    @media (prefers-color-scheme: dark) { body { background: #151A2E; } }
+    math-field::part(menu-toggle) { display: none; }
+    .katex { font-size: 1.12em; }
+    .katex-display { margin: .6em 0; overflow-x: auto; overflow-y: hidden; }
+  </style>
+</head>
+<body>
+  <div id="chargement" role="status" aria-live="polite">
+    <div class="rond"></div>
+    <div>Chargement de la plateforme…</div>
+    <small id="chargement-info">La première ouverture peut prendre quelques secondes.</small>
+  </div>
+  <script>
+    // Réveil du serveur gratuit dès l'ouverture de la page, pendant le téléchargement de l'application (sinon les
+    // deux attentes s'additionnent). L'adresse est inscrite par publier_site.sh ; rien en local.
+    (function () {
+      var api = "https://plateforme-educative-relais.vercel.app";
+      if (api.indexOf("__") === 0) return;
+      try {
+        var lien = document.createElement("link");
+        lien.rel = "preconnect"; lien.href = api; lien.crossOrigin = "anonymous";
+        document.head.appendChild(lien);
+        fetch(api + "/health", { mode: "no-cors", cache: "no-store" }).catch(function () {});
+      } catch (e) { /* l'application réveillera le serveur elle-même */ }
+    })();
+    // Installation comme application (Chrome, Edge, Android) : l'invitation du navigateur est gardée pour le bouton
+    // « Installer l'application » de l'espace élève.
+    window.invitationInstallation = null;
+    window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); window.invitationInstallation = e; });
+    window.addEventListener("appinstalled", function () { window.invitationInstallation = null; });
+    // Retiré dès que l'application affiche sa première image ; message d'aide si le réseau est très lent.
+    window.addEventListener("flutter-first-frame", function () {
+      var el = document.getElementById("chargement");
+      if (el) { el.style.opacity = "0"; setTimeout(function () { el.remove(); }, 350); }
+    });
+    setTimeout(function () {
+      var info = document.getElementById("chargement-info");
+      if (info) info.textContent = "Connexion lente : le chargement continue. Si rien ne s'affiche, mettez à jour Chrome puis rechargez la page.";
+    }, 20000);
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+  <!-- MathLive et KaTeX (licence MIT), copiés dans le projet (fonctionnent sans internet). KaTeX est chargé
+       « defer » ; MathLive (le plus lourd) seulement après l'affichage du site ou dès qu'un champ de formule en a
+       besoin (chargerMathLive) : il ne dispute plus la connexion au démarrage. -->
+  <script>
+    // Compose les formules (span.tex, LaTeX dans data-tex) ; en cas d'échec le MathML du serveur reste affiché.
+    // Si KaTeX n'est pas encore arrivé, les formules attendent et sont composées dès son chargement.
+    var formulesEnAttente = [];
+    window.composeMath = function (root) {
+      if (!window.katex) { formulesEnAttente.push(root); return; }
+      root.querySelectorAll("span.tex[data-tex]").forEach(function (el) {
+        try {
+          var html = katex.renderToString(el.getAttribute("data-tex"), {
+            displayMode: el.getAttribute("data-display") === "1", throwOnError: true, output: "html",
+            strict: "ignore", trust: false
+          });
+          el.innerHTML = html;
+          el.removeAttribute("data-tex");
+        } catch (e) { /* formule non reconnue par KaTeX : MathML conservé */ }
+      });
+    };
+    function katexArrive() {
+      var roots = formulesEnAttente; formulesEnAttente = [];
+      roots.forEach(function (root) { window.composeMath(root); });
+    }
+    // MathLive à la demande : une seule fois, réglé en français, puis prêt quand <math-field> est défini.
+    var mathLivePromesse = null;
+    window.chargerMathLive = function () {
+      if (mathLivePromesse) return mathLivePromesse;
+      mathLivePromesse = new Promise(function (ok, echec) {
+        var s = document.createElement("script");
+        s.src = "mathlive/mathlive.min.js";
+        s.onload = function () {
+          var M = window.MathfieldElement || (window.MathLive && window.MathLive.MathfieldElement);
+          if (M) {
+            M.fontsDirectory = "fonts/"; // relatif au script mathlive.min.js
+            M.soundsDirectory = null;
+            M.keypressSound = null;
+            M.plonkSound = null;
+            M.locale = "fr";
+            M.decimalSeparator = ",";
+          }
+          customElements.whenDefined("math-field").then(ok);
+        };
+        s.onerror = function () { mathLivePromesse = null; echec(new Error("MathLive non chargé")); };
+        document.head.appendChild(s);
+      });
+      return mathLivePromesse;
+    };
+    // Préchargé quelques secondes après l'affichage du site, pour que le premier champ de formule soit immédiat.
+    window.addEventListener("flutter-first-frame", function () {
+      setTimeout(function () { window.chargerMathLive().catch(function () {}); }, 3000);
+    });
+  </script>
+  <script src="katex/katex.min.js" defer onload="katexArrive()"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "Plateforme éducative",
+  "short_name": "Éducative",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#F5F7FC",
+  "theme_color": "#3158D5",
+  "description": "Espace élève et administration de la plateforme éducative.",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false,
+  "icons": [
+    {"src": "icons/Icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icons/Icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icons/Icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable"},
+    {"src": "icons/Icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
